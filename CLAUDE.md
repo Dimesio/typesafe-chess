@@ -26,6 +26,9 @@ from the legal moves, and Stockfish grades each pick. **The full design and mile
   must never reach Jev's state or criteria.
 - Keep `raw` and `assisted` setups exactly as PLAN.md §3 defines them. If you add an assisted
   fact, document it in `server/position.js` and add a unit test.
+- Foresight levels (`setup.foresight`, PLAN.md §3) are separate and opt-in. Level 0 must stay
+  identical to plain assisted. A new lookahead fact is a new level on top, never a change to a
+  lower one, and needs the same documentation and unit test.
 - Keep the state small and list only facts that apply. Jev is weak at counting, arithmetic and
   large irrelevant state (see PLAN.md §1).
 - Don't gate or override Jev's pick based on confidence. Log it instead.
@@ -37,6 +40,8 @@ from the legal moves, and Stockfish grades each pick. **The full design and mile
 - `npm test` runs `node --test`
 - `node scripts/ask.js --fen "<fen>" [--setups raw-choice,assisted-noul] [--history "e4 e5"] [--json]`
   asks Jev about one position and prints each setup's distribution (live when a key exists)
+- Setup names everywhere are `info-strategy` plus an optional foresight level for assisted:
+  `assisted-choice-f2` (`public/setups.js`). Level 0 has no suffix, so M5 names still match.
 - `node scripts/verify-live.js` re-runs the M0 API checks
 - `npm run bench -- --calibrate` rates the Elo ladder and fits the cp loss → Elo curve. It writes
   `bench/elo-calibration.json` and takes about an hour on 10 workers. `--quick` is a
@@ -201,10 +206,32 @@ lost it (PLAN.md §4 "Why a pool and a hold").
 - `.claude/launch.json` has `app-mock-5174` for when a live server holds 5173.
 - 75 unit tests pass.
 
+**Foresight levels (2026-09-18, branch `foresight-levels`, at the user's request):**
+- `setup.foresight` 0–3 (assisted only) adds facts about the opponent's reply, one per level:
+  - 1: material after their best capture
+  - 2: whether they can mate in one
+  - 3: whether they can fork (costing at least a minor piece)
+- Chosen from assisted Jev's logged blunders. Documented in `server/position.js` and PLAN.md §3.
+- **UI:** a "foresight 0 1 2 3" control in the top bar, disabled for raw.
+- **Everywhere else:** setup names carry the level through stats, the dashboard, the bench and
+  `scripts/ask.js`.
+- **Speed:** exchange recursion uses only the pieces attacking the square, and reply positions
+  come from their FEN. Level 3 went from 3.5 s to about 0.15 s per position, and level 0 got 25%
+  faster.
+- **Level 0 is unchanged:** identical output on all 4,826 logged positions.
+- **Live suite** (4,520 decisions, FINDINGS.md §7):
+  - Level 1 cut undecided cp loss from 95 to 86 (choice) and from 88 to 71 (noul), and
+    blunders by about a third.
+  - Levels 2 and 3 were heeded but added nothing measurable.
+  - assisted-noul-f1's move-quality estimate (1718 [1517–1772]) is the first one inside the
+    rated range.
+- 87 unit tests pass.
+
 **Open follow-ups** (FINDINGS.md "Next steps"):
 - ladder rungs between greedy capture (≤ 1026) and skill 0 at depth 1 (1517)
 - the deeper check (`--check 60 --from runs/bench-suite-… runs/bench-games-…`)
 - `includeFen` and more assisted facts, tested one at a time
+- ladder games at foresight levels 1 and 2 (FINDINGS.md next step 5)
 - lost-position grades that take 10–120 s. Any fix changes the grading method, such as a node
   cap or not solving mates past the ±1000 cap. It would then need the bench and a new
   calibration, so it's the user's call.

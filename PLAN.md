@@ -105,7 +105,7 @@ Scripts: `npm start` (serves on http://localhost:5173), `npm test`, `npm run ben
 ### `POST /api/jev`
 Request:
 ```json
-{ "fen": "…", "history": ["e4","e5","Nf3"], "setup": { "info": "raw|assisted", "strategy": "choice|noul", "shuffle": true, "includeFen": false }, "model": "jev-latest" }
+{ "fen": "…", "history": ["e4","e5","Nf3"], "setup": { "info": "raw|assisted", "strategy": "choice|noul", "shuffle": true, "includeFen": false, "foresight": 0 }, "model": "jev-latest" }
 ```
 Response:
 ```json
@@ -202,6 +202,9 @@ opponent's single reply and never at Stockfish.
   never pool levels. Bench: `--setups assisted-choice-f1,assisted-noul-f3`.
 - **Cost:** one analysis takes up to about 180 ms at level 3 on a 48-move position (65 ms at
   level 0), after reading reply positions from their FEN instead of chess.js `move()`.
+- **Result on the suite (FINDINGS.md §7):** level 1 cut undecided cp loss by 9 (choice) and 17
+  (noul) and blunders by about a third. Levels 2 and 3 were heeded but added nothing
+  measurable. Games are next.
 
 ### Questions
 - **Strategy A, Choice (default).** One Choice over all legal moves:

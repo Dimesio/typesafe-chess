@@ -5,6 +5,8 @@ API. Every number below comes from these log files:
 - `runs/bench-suite-2026-09-18T13-37-46-248Z.jsonl`: the position suite, 2,260 decisions
 - `runs/bench-games-2026-09-18T13-43-11-677Z.jsonl`: 79 finished games, 2,978 decisions
 - `runs/summary-2026-09-18T13-58-06-270Z.md`: the generated report
+- Section 7 (foresight levels, the same evening): `runs/bench-suite-2026-09-18T22-58-07-870Z.jsonl`,
+  4,520 decisions, and its report `runs/summary-2026-09-18T23-10-21-562Z.md`
 
 Re-run the report with `npm run bench -- --report <files>`.
 
@@ -142,6 +144,45 @@ Same position, five option orders:
 - **Cost:** the whole bench used 10.3M input tokens, $0.43 at $0.042 per million, with free
   output. A 40-move game costs about $0.004 with assisted-choice.
 
+### 7. Foresight: facts about the opponent's reply
+Assisted-choice and assisted-noul at foresight levels 0–3 (PLAN.md §3), on the same 113
+positions and 5 option orders: 4,520 decisions. Level 1 adds the material you'd have after the
+opponent's best capture, level 2 whether they can then mate in one, level 3 whether they can
+then fork. Level 0 reproduced this morning's M5 run (95 and 88 cp, against 95 and 89).
+
+| setup | undecided cp loss (± SE) | blunder rate | top-1 | tokens / decision |
+|---|---|---|---|---|
+| assisted-choice (level 0) | 95 ± 7 | 6.0% | 30% | 2,315 |
+| assisted-choice-f1 | 86 ± 7 | 4.2% | 32% | 2,674 |
+| assisted-choice-f2 | 83 ± 7 | 3.7% | 32% | 2,679 |
+| assisted-choice-f3 | 85 ± 7 | 3.7% | 33% | 2,864 |
+| assisted-noul (level 0) | 88 ± 7 | 4.8% | 30% | 3,033 |
+| assisted-noul-f1 | **71 ± 6** | **3.2%** | 33% | 3,391 |
+| assisted-noul-f2 | 74 ± 6 | 3.4% | 33% | 3,396 |
+| assisted-noul-f3 | 74 ± 6 | 3.9% | 34% | 3,581 |
+
+All five orders; the report's suite table uses the fixed order only.
+- **Level 1 helps.** Compared with level 0 on the same position and order, cp loss changed by
+  −9 ± 8 (choice) and −17 ± 11 (noul), with 95% intervals. Blunders fell by about a third.
+  Jev picked a move the fact marks as losing material 68 times in 565 without it, and 42
+  (choice) or 30 (noul) times with it.
+- **Levels 2 and 3 add nothing measurable on the suite.** Against the level below, level 2
+  changed cp loss by −2.5 ± 3.3 (choice) and +2.5 ± 5.3 (noul); level 3 by +1.2 ± 6.0 and
+  +0.8 ± 6.4.
+  - Jev heeds level 2: picks that allow a mate went from 5 to 0. But only 6 of the 113
+    positions have such a move, so it can't move an average. It costs almost nothing, since it
+    appears on 0.5% of moves.
+  - Jev heeds level 3 too: picks that allow a fork roughly halved (119 to 69 for choice, 112 to
+    49 for noul). Cp loss didn't improve, though. Level 3 changed Jev's pick more often (the
+    same pick as level 0 in 75% and 68% of cases, against 83% and 76% at level 2) and adds
+    about 7% more tokens. Avoiding a flagged fork isn't the same as finding a good move.
+- **Move-quality Elo:** assisted-noul at levels 1–3 is the first setup whose estimate lands
+  inside the calibrated range: 1718 [1517–1772] at level 1. Read that as "at the bottom rung".
+  The interval reaches the floor, and on this part of the curve 4 cp is about 200 Elo. Suite
+  positions also differ from game positions (section 2), so games have to confirm it.
+- **Cost:** level 1 adds about 15% input tokens and 20–35 ms of latency, since the server
+  computes the facts.
+
 ## Caveats
 - **Small samples.** There were 20 games per setup, and only 7–14 of each counted toward
   performance Elo. The ± ranges are 95% intervals and are wide. The suite has 105 undecided
@@ -156,7 +197,8 @@ Same position, five option orders:
 - **Scale.** Ratings are on this project's Stockfish ladder at 150k nodes per move, anchored
   so the UCI_Elo rungs average their nominal values. They aren't FIDE or lichess ratings.
 - **Scope.** One model version, one question design, and assisted facts that are one-ply
-  rules facts. `includeFen`, other wordings and other facts weren't tested.
+  rules facts, plus (section 7) facts about the opponent's single reply, tested on the suite
+  only. `includeFen` and other wordings weren't tested.
 
 ## Next steps
 1. **Add ladder rungs between greedy capture and skill 0 at depth 1**, then play more games
@@ -167,3 +209,7 @@ Same position, five option orders:
    a unit test per CLAUDE.md), measured with this same suite.
 4. **Use the confidence ≥ 0.8 signal** (assisted-choice) in analysis. It predicts good
    moves, so log it for decisions; don't gate on it.
+5. **Play ladder games at foresight levels 1 and 2**, e.g. `npm run bench -- --games 20
+   --setups assisted-noul,assisted-noul-f1,assisted-noul-f2`. The suite says level 1 helps
+   and level 2 is free. Games will show whether that holds where mates and forks are common,
+   and give a performance Elo to set against the move-quality estimate.
