@@ -1,0 +1,1250 @@
+{
+  "sources": [
+    "runs/bench-suite-2026-09-18T13-37-46-248Z.jsonl",
+    "runs/bench-games-2026-09-18T13-43-11-677Z.jsonl"
+  ],
+  "report": {
+    "games": [
+      {
+        "setup": "assisted-choice",
+        "decisions": 548,
+        "graded": 548,
+        "summary": {
+          "n": 548,
+          "accuracy": 85.95478465683784,
+          "avgLoss": 87.5529197080292,
+          "lossSE": 6.990136812303488,
+          "undecided": {
+            "n": 297,
+            "avgLoss": 119.23905723905725,
+            "lossSE": 11.709776649247706
+          },
+          "blunders": 18,
+          "mistakes": 17,
+          "inaccuracies": 49,
+          "top1": 0.4543795620437956,
+          "avgPBest": 0.392080291970803,
+          "avgExpectedLoss": 113.91654851434049,
+          "confLossR": -0.2595759841705914,
+          "evalAgreement": 0.5711678832116789,
+          "confusion": [
+            [
+              78,
+              77,
+              10,
+              6,
+              0
+            ],
+            [
+              0,
+              14,
+              24,
+              11,
+              0
+            ],
+            [
+              0,
+              24,
+              129,
+              7,
+              0
+            ],
+            [
+              0,
+              4,
+              13,
+              16,
+              0
+            ],
+            [
+              0,
+              6,
+              5,
+              48,
+              76
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 14,
+          "wins": 1,
+          "draws": 0,
+          "losses": 13,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 14,
+            "elo": 1134.176692414031,
+            "low": 776.7126270388881,
+            "high": 1491.6407577891741
+          }
+        },
+        "latencyMs": 214.94890510948906,
+        "inputTokens": 2354.8394160583944,
+        "cost": 0.054198984000000006
+      },
+      {
+        "setup": "assisted-noul",
+        "decisions": 672,
+        "graded": 672,
+        "summary": {
+          "n": 672,
+          "accuracy": 86.83677015753108,
+          "avgLoss": 77.87053571428571,
+          "lossSE": 5.21967565698864,
+          "undecided": {
+            "n": 304,
+            "avgLoss": 117.95394736842105,
+            "lossSE": 9.59141593470111
+          },
+          "blunders": 16,
+          "mistakes": 21,
+          "inaccuracies": 48,
+          "top1": 0.42410714285714285,
+          "avgPBest": 0.32563960926324154,
+          "avgExpectedLoss": 172.5619891916358,
+          "confLossR": null,
+          "evalAgreement": 0.49255952380952384,
+          "confusion": [
+            [
+              77,
+              149,
+              2,
+              20,
+              0
+            ],
+            [
+              0,
+              22,
+              17,
+              10,
+              0
+            ],
+            [
+              0,
+              40,
+              103,
+              17,
+              0
+            ],
+            [
+              0,
+              5,
+              23,
+              8,
+              0
+            ],
+            [
+              0,
+              7,
+              10,
+              41,
+              121
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 10,
+          "wins": 0,
+          "draws": 0,
+          "losses": 10,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 10,
+            "bound": "below",
+            "value": 1517
+          }
+        },
+        "latencyMs": 221.27232142857142,
+        "inputTokens": 3020.1755952380954,
+        "cost": 0.08524143600000002
+      },
+      {
+        "setup": "raw-choice",
+        "decisions": 698,
+        "graded": 698,
+        "summary": {
+          "n": 698,
+          "accuracy": 88.95195950005214,
+          "avgLoss": 86.66045845272207,
+          "lossSE": 7.411890798191832,
+          "undecided": {
+            "n": 245,
+            "avgLoss": 129.0857142857143,
+            "lossSE": 14.975102120058782
+          },
+          "blunders": 43,
+          "mistakes": 8,
+          "inaccuracies": 18,
+          "top1": 0.5200573065902578,
+          "avgPBest": 0.4459169054441258,
+          "avgExpectedLoss": 102.83204104078024,
+          "confLossR": -0.07018364875660768,
+          "evalAgreement": 0.45415472779369626,
+          "confusion": [
+            [
+              205,
+              169,
+              30,
+              46,
+              2
+            ],
+            [
+              0,
+              5,
+              3,
+              4,
+              0
+            ],
+            [
+              13,
+              21,
+              82,
+              7,
+              2
+            ],
+            [
+              0,
+              7,
+              21,
+              10,
+              2
+            ],
+            [
+              1,
+              13,
+              14,
+              26,
+              15
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 13,
+          "wins": 1,
+          "draws": 1,
+          "losses": 11,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 13,
+            "elo": 1311.7943525937794,
+            "low": 1003.0621041208899,
+            "high": 1620.526601066669
+          }
+        },
+        "latencyMs": 208.8323782234957,
+        "inputTokens": 945.6117478510029,
+        "cost": 0.027721554000000002
+      },
+      {
+        "setup": "raw-noul",
+        "decisions": 1060,
+        "graded": 1060,
+        "summary": {
+          "n": 1060,
+          "accuracy": 89.22473342740308,
+          "avgLoss": 92.53018867924528,
+          "lossSE": 6.2527569442034,
+          "undecided": {
+            "n": 242,
+            "avgLoss": 163.20247933884298,
+            "lossSE": 16.081251525862363
+          },
+          "blunders": 62,
+          "mistakes": 10,
+          "inaccuracies": 19,
+          "top1": 0.49339622641509434,
+          "avgPBest": 0.4355204783023338,
+          "avgExpectedLoss": 118.60790284692408,
+          "confLossR": null,
+          "evalAgreement": 0.5009433962264151,
+          "confusion": [
+            [
+              272,
+              208,
+              26,
+              48,
+              8
+            ],
+            [
+              0,
+              7,
+              0,
+              6,
+              0
+            ],
+            [
+              8,
+              8,
+              61,
+              8,
+              0
+            ],
+            [
+              1,
+              5,
+              31,
+              3,
+              1
+            ],
+            [
+              4,
+              16,
+              33,
+              118,
+              188
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 7,
+          "wins": 0,
+          "draws": 1,
+          "losses": 6,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 7,
+            "elo": 1247.0491285119633,
+            "low": 729.2287363400112,
+            "high": 1764.8695206839154
+          }
+        },
+        "latencyMs": 211.64528301886793,
+        "inputTokens": 1381.851886792453,
+        "cost": 0.06152004600000001
+      }
+    ],
+    "suite": [
+      {
+        "setup": "assisted-choice",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 80.39871855464128,
+          "avgLoss": 98.61061946902655,
+          "lossSE": 17.016261806591576,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 106.03809523809524,
+            "lossSE": 18.113131070613697
+          },
+          "blunders": 10,
+          "mistakes": 1,
+          "inaccuracies": 15,
+          "top1": 0.2920353982300885,
+          "avgPBest": 0.2297345132743362,
+          "avgExpectedLoss": 132.45528649325104,
+          "confLossR": -0.15918683387894583,
+          "evalAgreement": 0.5929203539823009,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              12,
+              44,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              4,
+              12,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              8,
+              4
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 212.96814159292035,
+        "inputTokens": 2315.380530973451,
+        "cost": 0.05494398000000001
+      },
+      {
+        "setup": "assisted-noul",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 81.88489983925965,
+          "avgLoss": 83.57522123893806,
+          "lossSE": 14.605715620208507,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 89.85714285714286,
+            "lossSE": 15.552307041629268
+          },
+          "blunders": 6,
+          "mistakes": 5,
+          "inaccuracies": 13,
+          "top1": 0.30973451327433627,
+          "avgPBest": 0.08211159200583439,
+          "avgExpectedLoss": 248.7421167719265,
+          "confLossR": null,
+          "evalAgreement": 0.584070796460177,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              13,
+              44,
+              5,
+              0
+            ],
+            [
+              0,
+              0,
+              5,
+              11,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              8,
+              4
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 234.70973451327433,
+        "inputTokens": 3032.5398230088495,
+        "cost": 0.07196217
+      },
+      {
+        "setup": "raw-choice",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 59.66816955033407,
+          "avgLoss": 268.6991150442478,
+          "lossSE": 28.13629148237422,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 279.4761904761905,
+            "lossSE": 28.64180420025604
+          },
+          "blunders": 39,
+          "mistakes": 8,
+          "inaccuracies": 7,
+          "top1": 0.18584070796460178,
+          "avgPBest": 0.14168141592920344,
+          "avgExpectedLoss": 317.05497184231695,
+          "confLossR": -0.08144718650092511,
+          "evalAgreement": 0.45132743362831856,
+          "confusion": [
+            [
+              0,
+              4,
+              0,
+              2,
+              0
+            ],
+            [
+              0,
+              3,
+              4,
+              2,
+              0
+            ],
+            [
+              1,
+              9,
+              38,
+              16,
+              0
+            ],
+            [
+              0,
+              2,
+              6,
+              8,
+              0
+            ],
+            [
+              0,
+              1,
+              6,
+              9,
+              2
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 205.05132743362833,
+        "inputTokens": 1243,
+        "cost": 0.029496390000000004
+      },
+      {
+        "setup": "raw-noul",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 56.68178442719733,
+          "avgLoss": 287.4070796460177,
+          "lossSE": 27.60568886491918,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 293.8666666666667,
+            "lossSE": 27.948159973594784
+          },
+          "blunders": 40,
+          "mistakes": 9,
+          "inaccuracies": 10,
+          "top1": 0.12389380530973451,
+          "avgPBest": 0.06309677956066785,
+          "avgExpectedLoss": 335.2565219251355,
+          "confLossR": null,
+          "evalAgreement": 0.45132743362831856,
+          "confusion": [
+            [
+              0,
+              4,
+              0,
+              2,
+              0
+            ],
+            [
+              0,
+              2,
+              5,
+              2,
+              0
+            ],
+            [
+              0,
+              11,
+              39,
+              14,
+              0
+            ],
+            [
+              0,
+              1,
+              7,
+              8,
+              0
+            ],
+            [
+              0,
+              1,
+              7,
+              8,
+              2
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 221.32566371681415,
+        "inputTokens": 1960.1592920353983,
+        "cost": 0.04651458000000001
+      }
+    ],
+    "order": [
+      {
+        "setup": "assisted-choice",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.5663716814159292,
+        "pairAgree": 0.7513274336283186,
+        "pBestSpread": 0.07725663716814155,
+        "lossSpread": 60.02654867256637,
+        "quintiles": [
+          1.0391870794078095,
+          0.9166915351506474,
+          0.9541765557163547,
+          0.9343472022955566,
+          1.1517120980091904
+        ]
+      },
+      {
+        "setup": "assisted-noul",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.7699115044247787,
+        "pairAgree": 0.879646017699115,
+        "pBestSpread": 0.003026447362051584,
+        "lossSpread": 27.964601769911503,
+        "quintiles": [
+          1.0030882521534727,
+          0.9981161721906523,
+          1.0133135954127133,
+          0.9895347972198374,
+          0.9955788798478884
+        ]
+      },
+      {
+        "setup": "raw-choice",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.6194690265486725,
+        "pairAgree": 0.8017699115044248,
+        "pBestSpread": 0.042212389380530915,
+        "lossSpread": 121.63716814159292,
+        "quintiles": [
+          1.0329771197846604,
+          0.9015581061692995,
+          0.943276410998554,
+          0.944631276901007,
+          1.1778683001531411
+        ]
+      },
+      {
+        "setup": "raw-noul",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.7610619469026548,
+        "pairAgree": 0.8769911504424779,
+        "pBestSpread": 0.002118329275455032,
+        "lossSpread": 79,
+        "quintiles": [
+          1.01018298290993,
+          0.9880737604315484,
+          0.9930728634938777,
+          0.9937891585376837,
+          1.0151029716724322
+        ]
+      }
+    ],
+    "curated": [
+      {
+        "position": "start",
+        "category": "opening",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Nf3",
+            "loss": 13,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Nf3",
+            "loss": 13,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-back-rank",
+        "category": "mate in 1",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-back-rank-black",
+        "category": "mate in 1",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-scholars",
+        "category": "mate in 1",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          }
+        }
+      },
+      {
+        "position": "hanging-queen",
+        "category": "hanging piece",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Nc3",
+            "loss": 603,
+            "label": "mistake",
+            "best": [
+              "f3h4"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "fork-knight",
+        "category": "fork",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          }
+        }
+      },
+      {
+        "position": "pin-italian",
+        "category": "pin",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "raw-noul": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          }
+        }
+      },
+      {
+        "position": "en-passant",
+        "category": "en passant",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Nc3",
+            "loss": 27,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "promotion",
+        "category": "promotion",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "raw-noul": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          }
+        }
+      },
+      {
+        "position": "castling",
+        "category": "castling",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "raw-noul": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          }
+        }
+      },
+      {
+        "position": "stalemate-trap",
+        "category": "stalemate",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Qa7+",
+            "loss": 1009,
+            "label": "blunder",
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Qd8+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Qa7+",
+            "loss": 1009,
+            "label": "blunder",
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Qd8+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          }
+        }
+      },
+      {
+        "position": "quiet-qgd",
+        "category": "quiet",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "raw-noul": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "lucena",
+        "category": "endgame",
+        "bySetup": {
+          "raw-choice": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "assisted-choice": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "raw-noul": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "assisted-noul": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          }
+        }
+      }
+    ],
+    "check": null,
+    "session": {
+      "perfGames": 44,
+      "ineligible": 35
+    }
+  }
+}

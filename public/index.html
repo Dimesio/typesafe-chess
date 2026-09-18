@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeSafe Chess</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
+  <link rel="stylesheet" href="/vendor/chessground/assets/chessground.base.css">
+  <link rel="stylesheet" href="/vendor/chessground/assets/chessground.brown.css">
+  <link rel="stylesheet" href="/vendor/chessground/assets/chessground.cburnett.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="importmap">
+    { "imports": { "chess.js": "/vendor/chess.js", "chessground": "/vendor/chessground/chessground.js" } }
+  </script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>TypeSafe Chess</h1>
+    <div class="players" aria-label="Players">
+      <label class="field"><span>White</span>
+        <select id="player-w"><option value="human">Me</option><option value="jev">Jev</option><option value="stockfish">Stockfish</option></select>
+      </label>
+      <span class="muted">vs</span>
+      <label class="field"><span>Black</span>
+        <select id="player-b"><option value="human">Me</option><option value="jev">Jev</option><option value="stockfish">Stockfish</option></select>
+      </label>
+      <button type="button" id="engine-settings" title="Stockfish strength and think time">Stockfish: <span id="engine-label"></span></button>
+    </div>
+    <div class="setup" id="setup" aria-label="Jev setup">
+      <div class="seg" data-key="info" role="group" aria-label="Input">
+        <button type="button" data-value="raw">raw</button><button type="button" data-value="assisted">assisted</button>
+      </div>
+      <div class="seg" data-key="strategy" role="group" aria-label="Question strategy">
+        <button type="button" data-value="choice">choice</button><button type="button" data-value="noul">noul</button>
+      </div>
+      <div class="seg" data-key="policy" role="group" aria-label="Pick policy">
+        <button type="button" data-value="argmax">argmax</button><button type="button" data-value="sample">sample</button>
+      </div>
+      <label class="check"><input type="checkbox" id="shuffle"> shuffle</label>
+      <label class="check"><input type="checkbox" id="include-fen"> include FEN</label>
+    </div>
+    <div class="spacer"></div>
+    <span id="badge" class="badge" hidden></span>
+    <span id="model" class="muted small"></span>
+    <a href="/dashboard.html" class="small" target="_blank" rel="noopener">Session dashboard ↗</a>
+  </header>
+
+  <main class="layout">
+    <section class="board-col">
+      <div class="spare cg-wrap" id="spare-top" hidden></div>
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="promo" class="promo cg-wrap" hidden></div>
+      </div>
+      <div class="spare cg-wrap" id="spare-bottom" hidden></div>
+
+      <div class="nav" id="nav">
+        <button type="button" data-go="start" aria-label="First position" title="First position (Home)">⏮</button>
+        <button type="button" data-go="back" aria-label="Back" title="Back (←)">◀</button>
+        <button type="button" data-go="forward" aria-label="Forward" title="Forward (→)">▶</button>
+        <button type="button" data-go="end" aria-label="Last position" title="Last position (End)">⏭</button>
+        <span id="position-label" class="muted small"></span>
+        <div class="spacer"></div>
+        <button type="button" id="flip" title="Flip board">Flip</button>
+        <button type="button" id="edit">Edit</button>
+        <button type="button" id="load">Load</button>
+        <button type="button" id="new-game">New game</button>
+      </div>
+
+      <div class="card" id="turn-card">
+        <div class="card-head">
+          <h2 id="turn-title">Jev</h2>
+          <span id="turn-status" class="muted small"></span>
+        </div>
+        <div class="steps">
+          <button type="button" id="ask" class="primary">Ask Jev</button>
+          <span class="arrow" aria-hidden="true">→</span>
+          <span id="grade-step" class="chip" title="Stockfish grades every legal move">Grade</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <button type="button" id="play-pick" disabled>Play</button>
+        </div>
+        <div class="row" id="turn-actions">
+          <button type="button" id="ask-again" disabled>Ask again</button>
+          <button type="button" id="cancel-ask" hidden>Cancel</button>
+          <button type="button" id="compare" title="Ask all four setups (raw/assisted × choice/noul) on this position and grade them against the same analysis">Compare setups</button>
+          <button type="button" id="next-game" class="primary" hidden>Next ladder game</button>
+        </div>
+        <div class="row" id="flow-row">
+          <span class="label">Computer moves</span>
+          <div class="seg" id="flow" role="group" aria-label="How computer players move">
+            <button type="button" data-value="step" title="Jev and Stockfish show their move and wait for you to press Play">Step</button><button type="button" data-value="auto" title="Jev and Stockfish play their moves by themselves">Auto</button>
+          </div>
+          <label class="field" id="delay-field"><span class="label">every</span>
+            <select id="delay">
+              <option value="0">instantly</option><option value="500">0.5 s</option><option value="1000">1 s</option><option value="2000">2 s</option>
+            </select>
+          </label>
+          <label class="check" title="On each of Jev's turns, also ask the three setups that aren't playing, and grade them. They don't affect the game."><input type="checkbox" id="shadow"> Shadow-run the other setups</label>
+        </div>
+        <p id="ladder-line" class="muted small" hidden></p>
+        <p id="turn-hint" class="muted small"></p>
+        <div id="error" class="error" role="alert" hidden></div>
+      </div>
+
+      <div class="card" id="editor-card" hidden>
+        <div class="card-head"><h2>Edit position</h2></div>
+        <p class="muted small">Drag pieces to move them, drag them off the board to remove them, and drag from the trays to add them.</p>
+        <div class="row">
+          <button type="button" id="ed-start">Start position</button>
+          <button type="button" id="ed-clear">Clear board</button>
+        </div>
+        <div class="row">
+          <span class="label">To move</span>
+          <label class="check"><input type="radio" name="ed-turn" value="w" checked> White</label>
+          <label class="check"><input type="radio" name="ed-turn" value="b"> Black</label>
+        </div>
+        <div class="row">
+          <span class="label">Castling</span>
+          <label class="check"><input type="checkbox" data-castle="K"> White O-O</label>
+          <label class="check"><input type="checkbox" data-castle="Q"> White O-O-O</label>
+          <label class="check"><input type="checkbox" data-castle="k"> Black O-O</label>
+          <label class="check"><input type="checkbox" data-castle="q"> Black O-O-O</label>
+        </div>
+        <div class="row">
+          <label class="field"><span class="label">En passant</span><select id="ed-ep"></select></label>
+        </div>
+        <label class="field wide"><span class="label">FEN</span><input id="ed-fen" spellcheck="false" autocomplete="off"></label>
+        <ul id="ed-errors" class="error" hidden></ul>
+        <div class="row">
+          <button type="button" id="ed-done" class="primary">Done</button>
+          <button type="button" id="ed-cancel">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="side-col">
+      <div class="card" id="decision">
+        <div class="card-head">
+          <h2 id="decision-title">Jev's decision</h2>
+          <span id="decision-meta" class="muted small"></span>
+        </div>
+        <div id="decision-body" class="muted">Ask Jev to see its distribution over the legal moves.</div>
+        <div id="decision-foot" class="stats-line small"></div>
+      </div>
+      <div class="card" id="stats">
+        <div class="card-head"><h2>This game: Jev</h2><span id="stats-meta" class="muted small"></span></div>
+        <div id="stats-body" class="muted small">Stats appear once Jev's decisions are graded.</div>
+      </div>
+      <div class="card" id="compare-card" hidden>
+        <div class="card-head"><h2 id="compare-title">Setups on this position</h2><span id="compare-meta" class="muted small"></span></div>
+        <div id="compare-body"></div>
+      </div>
+      <details class="card" id="inspector">
+        <summary>Inspector: exact request and answers</summary>
+        <div id="inspector-body" class="muted small">Nothing sent yet for this position.</div>
+      </details>
+    </section>
+
+    <section class="bottom">
+      <div class="card" id="timeline-card">
+        <div class="card-head">
+          <h2>Timeline</h2>
+          <span class="legend small">
+            <span><i class="sw sw-line"></i>Stockfish eval</span>
+            <span><i class="sw sw-dot"></i>Jev's own eval</span>
+            <span><i class="sw sw-bar"></i>Jev's cp loss</span>
+            <span class="muted">White is up, black is down · click to jump</span>
+          </span>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Moves</h2><span class="row-inline"><span id="game-meta" class="muted small"></span><button type="button" id="export-pgn" class="small">Export PGN</button></span></div>
+        <div id="moves" class="moves"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>
+
+  <dialog id="engine-dialog">
+    <form method="dialog" class="dialog">
+      <h2>Stockfish as a player</h2>
+      <p class="muted small">Used when Stockfish plays a side. The full range is available, from scripted baselines to full strength. Stockfish searches a fixed number of nodes per move, so its strength doesn't depend on how busy the computer is.</p>
+      <div class="row">
+        <label class="check"><input type="radio" name="eng-mode" value="elo"> Elo</label>
+        <input type="number" id="eng-elo" min="1320" max="3190" step="10">
+        <span class="muted small">1320–3190 (UCI_Elo)</span>
+      </div>
+      <div class="row">
+        <label class="check"><input type="radio" name="eng-mode" value="skill"> Skill level</label>
+        <input type="number" id="eng-skill" min="0" max="20" step="1">
+        <span class="muted small">0–20</span>
+      </div>
+      <div class="row">
+        <label class="check"><input type="radio" name="eng-mode" value="full"> Full strength</label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="radio" name="eng-mode" value="depth"> Full strength to a fixed depth</label>
+        <input type="number" id="eng-depth-play" min="1" max="30" step="1">
+      </div>
+      <div class="row">
+        <label class="check"><input type="radio" name="eng-mode" value="greedy"> Greedy capture</label>
+        <label class="check"><input type="radio" name="eng-mode" value="random"> Random mover</label>
+        <span class="muted small">scripted baselines, not Stockfish</span>
+      </div>
+      <div class="row">
+        <label class="field"><span class="label">Nodes per move</span><input type="number" id="eng-nodes" min="1000" max="50000000" step="1000"></label>
+        <span class="muted small">150,000 ≈ 0.2 s here (Elo, skill and full strength)</span>
+      </div>
+      <p id="eng-rating" class="muted small"></p>
+
+      <h2 class="dialog-sub">Ladder (Jev vs Stockfish)</h2>
+      <label class="check"><input type="checkbox" id="ladder-on"> After each game, move Stockfish up after a Jev win and down after a loss</label>
+      <label class="check"><input type="checkbox" id="ladder-alternate"> Swap Jev's color each game</label>
+      <p id="ladder-state" class="muted small"></p>
+      <div class="row"><button type="button" id="ladder-reset">Restart the ladder in the middle</button></div>
+
+      <h2 class="dialog-sub">Stockfish as the grader</h2>
+      <p class="muted small">Grades every legal move of each Jev decision at full strength. Deeper is slower and more reliable.</p>
+      <div class="row">
+        <label class="field"><span class="label">Grading depth</span><input type="number" id="eng-depth" min="1" max="40" step="1"></label>
+      </div>
+
+      <h2 class="dialog-sub">You</h2>
+      <div class="row">
+        <label class="field"><span class="label">Your rating (optional)</span><input type="number" id="human-rating" min="100" max="3500" step="1" placeholder="none"></label>
+        <span class="muted small">Games you play against Jev then count toward its performance Elo, in their own row.</span>
+      </div>
+      <p id="engine-error" class="error" hidden></p>
+      <div class="row end">
+        <button type="button" id="engine-cancel">Cancel</button>
+        <button type="button" id="engine-save" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="load-dialog">
+    <form method="dialog" class="dialog">
+      <h2>Load a position or game</h2>
+      <label class="field wide"><span class="label">Test position</span><select id="load-position"><option value="">Choose…</option></select></label>
+      <label class="field wide"><span class="label">FEN</span><input id="load-fen" spellcheck="false" autocomplete="off" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></label>
+      <label class="field wide"><span class="label">PGN</span><textarea id="load-pgn" rows="5" spellcheck="false" placeholder="1. e4 e5 2. Nf3 Nc6"></textarea></label>
+      <p id="load-error" class="error" hidden></p>
+      <div class="row end">
+        <button type="button" id="load-cancel">Cancel</button>
+        <button type="button" id="load-go" class="primary">Load</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

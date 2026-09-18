@@ -1,0 +1,391 @@
+{
+  "version": 1,
+  "created": "2026-09-18T08:34:58.019Z",
+  "depth": 12,
+  "cap": 1000,
+  "band": 500,
+  "nodes": 150000,
+  "anchor": "Ratings come from one Bradley–Terry fit over all games, shifted so the UCI_Elo rungs average their nominal values at 150000 nodes per move. They are on our Stockfish ladder's scale, not FIDE or lichess.",
+  "games": 396,
+  "perPair": 12,
+  "maxPlies": 300,
+  "samplesPerRung": 120,
+  "rungs": [
+    {
+      "id": "random",
+      "label": "random mover",
+      "strength": {
+        "mode": "random"
+      },
+      "rating": 1016,
+      "bound": "upper",
+      "se": 92,
+      "games": 24,
+      "score": 6,
+      "acpl": 380.3,
+      "acplN": 42,
+      "scripted": true
+    },
+    {
+      "id": "greedy",
+      "label": "greedy capture",
+      "strength": {
+        "mode": "greedy"
+      },
+      "rating": 1026,
+      "bound": "upper",
+      "se": 85,
+      "games": 36,
+      "score": 6.5,
+      "acpl": 182,
+      "acplN": 88,
+      "scripted": true
+    },
+    {
+      "id": "skill0@d1",
+      "label": "skill 0, depth 1",
+      "strength": {
+        "mode": "skill",
+        "skill": 0,
+        "searchDepth": 1
+      },
+      "rating": 1517,
+      "bound": null,
+      "se": 74,
+      "games": 48,
+      "score": 30,
+      "acpl": 74.7,
+      "acplN": 107,
+      "scripted": false
+    },
+    {
+      "id": "skill0@1000",
+      "label": "skill 0, 1k nodes",
+      "strength": {
+        "mode": "skill",
+        "skill": 0,
+        "nodes": 1000
+      },
+      "rating": 1556,
+      "bound": null,
+      "se": 62,
+      "games": 48,
+      "score": 24.5,
+      "acpl": 75.7,
+      "acplN": 106,
+      "scripted": false
+    },
+    {
+      "id": "depth1",
+      "label": "full strength, depth 1",
+      "strength": {
+        "mode": "depth",
+        "depth": 1
+      },
+      "rating": 1852,
+      "bound": null,
+      "se": 63,
+      "games": 48,
+      "score": 39.5,
+      "acpl": 27,
+      "acplN": 108,
+      "scripted": false
+    },
+    {
+      "id": "skill0@150000",
+      "label": "skill 0, 150k nodes",
+      "strength": {
+        "mode": "skill",
+        "skill": 0,
+        "nodes": 150000
+      },
+      "rating": 1646,
+      "bound": null,
+      "se": 53,
+      "games": 48,
+      "score": 19,
+      "acpl": 66.5,
+      "acplN": 102,
+      "scripted": false
+    },
+    {
+      "id": "elo1320@150000",
+      "label": "Elo 1320, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 1320,
+        "nodes": 150000
+      },
+      "rating": 1700,
+      "bound": null,
+      "se": 54,
+      "games": 48,
+      "score": 17.5,
+      "acpl": 82.3,
+      "acplN": 116,
+      "nominal": 1320,
+      "scripted": false
+    },
+    {
+      "id": "elo1500@150000",
+      "label": "Elo 1500, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 1500,
+        "nodes": 150000
+      },
+      "rating": 1769,
+      "bound": null,
+      "se": 54,
+      "games": 48,
+      "score": 21.5,
+      "acpl": 60.3,
+      "acplN": 111,
+      "nominal": 1500,
+      "scripted": false
+    },
+    {
+      "id": "elo1700@150000",
+      "label": "Elo 1700, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 1700,
+        "nodes": 150000
+      },
+      "rating": 1909,
+      "bound": null,
+      "se": 57,
+      "games": 48,
+      "score": 24.5,
+      "acpl": 38.1,
+      "acplN": 113,
+      "nominal": 1700,
+      "scripted": false
+    },
+    {
+      "id": "elo1900@150000",
+      "label": "Elo 1900, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 1900,
+        "nodes": 150000
+      },
+      "rating": 1978,
+      "bound": null,
+      "se": 57,
+      "games": 48,
+      "score": 22,
+      "acpl": 51.3,
+      "acplN": 110,
+      "nominal": 1900,
+      "scripted": false
+    },
+    {
+      "id": "elo2100@150000",
+      "label": "Elo 2100, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 2100,
+        "nodes": 150000
+      },
+      "rating": 2179,
+      "bound": null,
+      "se": 57,
+      "games": 48,
+      "score": 28.5,
+      "acpl": 31.2,
+      "acplN": 117,
+      "nominal": 2100,
+      "scripted": false
+    },
+    {
+      "id": "elo2300@150000",
+      "label": "Elo 2300, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 2300,
+        "nodes": 150000
+      },
+      "rating": 2179,
+      "bound": null,
+      "se": 58,
+      "games": 48,
+      "score": 19.5,
+      "acpl": 35,
+      "acplN": 111,
+      "nominal": 2300,
+      "scripted": false
+    },
+    {
+      "id": "elo2500@150000",
+      "label": "Elo 2500, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 2500,
+        "nodes": 150000
+      },
+      "rating": 2362,
+      "bound": null,
+      "se": 59,
+      "games": 48,
+      "score": 23,
+      "acpl": 26.2,
+      "acplN": 117,
+      "nominal": 2500,
+      "scripted": false
+    },
+    {
+      "id": "elo2700@150000",
+      "label": "Elo 2700, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 2700,
+        "nodes": 150000
+      },
+      "rating": 2500,
+      "bound": null,
+      "se": 63,
+      "games": 48,
+      "score": 23,
+      "acpl": 28.1,
+      "acplN": 115,
+      "nominal": 2700,
+      "scripted": false
+    },
+    {
+      "id": "elo2900@150000",
+      "label": "Elo 2900, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 2900,
+        "nodes": 150000
+      },
+      "rating": 2692,
+      "bound": null,
+      "se": 68,
+      "games": 48,
+      "score": 23.5,
+      "acpl": 10.9,
+      "acplN": 117,
+      "nominal": 2900,
+      "scripted": false
+    },
+    {
+      "id": "elo3190@150000",
+      "label": "Elo 3190, 150k nodes",
+      "strength": {
+        "mode": "elo",
+        "elo": 3190,
+        "nodes": 150000
+      },
+      "rating": 2843,
+      "bound": null,
+      "se": 75,
+      "games": 48,
+      "score": 20.5,
+      "acpl": 10.8,
+      "acplN": 113,
+      "nominal": 3190,
+      "scripted": false
+    },
+    {
+      "id": "full@150000",
+      "label": "full strength, 150k nodes",
+      "strength": {
+        "mode": "full",
+        "nodes": 150000
+      },
+      "rating": 3229,
+      "bound": null,
+      "se": 85,
+      "games": 36,
+      "score": 27,
+      "acpl": 5.7,
+      "acplN": 118,
+      "scripted": false
+    },
+    {
+      "id": "full@750000",
+      "label": "full strength, 750k nodes",
+      "strength": {
+        "mode": "full",
+        "nodes": 750000
+      },
+      "rating": 3349,
+      "bound": null,
+      "se": 96,
+      "games": 24,
+      "score": 20,
+      "acpl": 4.6,
+      "acplN": 117,
+      "scripted": false
+    }
+  ],
+  "points": [
+    {
+      "elo": 1517,
+      "acpl": 75.2
+    },
+    {
+      "elo": 1556,
+      "acpl": 75.2
+    },
+    {
+      "elo": 1646,
+      "acpl": 74.9
+    },
+    {
+      "elo": 1700,
+      "acpl": 74.9
+    },
+    {
+      "elo": 1769,
+      "acpl": 60.3
+    },
+    {
+      "elo": 1852,
+      "acpl": 38.8
+    },
+    {
+      "elo": 1909,
+      "acpl": 38.8
+    },
+    {
+      "elo": 1978,
+      "acpl": 38.8
+    },
+    {
+      "elo": 2179,
+      "acpl": 35
+    },
+    {
+      "elo": 2179,
+      "acpl": 31.2
+    },
+    {
+      "elo": 2362,
+      "acpl": 27.2
+    },
+    {
+      "elo": 2500,
+      "acpl": 27.2
+    },
+    {
+      "elo": 2692,
+      "acpl": 10.9
+    },
+    {
+      "elo": 2843,
+      "acpl": 10.8
+    },
+    {
+      "elo": 3229,
+      "acpl": 5.7
+    },
+    {
+      "elo": 3349,
+      "acpl": 4.6
+    }
+  ],
+  "raw": "runs/calibration-2026-09-18T08-18-24-705Z.jsonl"
+}

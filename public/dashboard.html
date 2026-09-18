@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="importmap">{ "imports": { "chess.js": "/vendor/chess.js" } }</script>
+  <script type="module" src="/dashboard.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Session dashboard</h1>
+    <label class="check"><input type="checkbox" id="f-mock"> include mock</label>
+    <label class="check"><input type="checkbox" id="f-extra" checked> include Compare and shadow decisions</label>
+    <label class="field"><span class="label">grades at depth</span><select id="f-depth"><option value="">any</option></select></label>
+    <button type="button" id="reload">Reload</button>
+    <button type="button" id="download">Download JSONL</button>
+    <div class="spacer"></div>
+    <a href="/" class="small">Back to the board</a>
+  </header>
+  <main class="dash">
+    <p id="summary" class="muted"></p>
+    <section class="card">
+      <div class="card-head"><h2>Per setup</h2><span class="muted small">one decision per position; overridden, discarded and (unless ticked) mock decisions are left out</span></div>
+      <div class="table-wrap"><table class="compare" id="setups"></table></div>
+      <p class="muted small stats-note">
+        <b>est. Elo (moves)</b>: from average cp loss through the calibration curve (the grading depth must match the calibration's).
+        <b>perf. Elo</b>: maximum likelihood over eligible games (standard start, no overrides, cuts, player or setup changes).
+        Ranges are 95% intervals. All ratings are on our Stockfish ladder's scale, not FIDE or lichess.
+      </p>
+    </section>
+    <div class="dash-grid">
+      <section class="card">
+        <div class="card-head"><h2>Does confidence predict move quality?</h2><span class="muted small">average cp loss by Jev's confidence (Choice setups)</span></div>
+        <div id="conf-chart" class="chart"></div>
+        <div id="conf-legend" class="legend small"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Ladder</h2><span class="muted small">opponent rating by game · ● win ◐ draw ○ loss</span></div>
+        <div id="ladder-chart" class="chart"></div>
+        <p id="ladder-note" class="muted small"></p>
+      </section>
+    </div>
+    <section class="card">
+      <div class="card-head"><h2>Position eval: Jev's level vs Stockfish's bucket</h2></div>
+      <div id="confusions" class="dash-grid"></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Calibration</h2><span id="cal-meta" class="muted small"></span></div>
+      <div id="calibration" class="table-wrap muted small">No calibration yet. Run <code>npm run bench -- --calibrate</code>.</div>
+    </section>
+  </main>
+</body>
+</html>

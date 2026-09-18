@@ -1,0 +1,20 @@
+{
+  "name": "typesafe-chess",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test TypeSafe Jev as a chess decision-maker, graded by Stockfish",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test",
+    "bench": "node bench/run.js"
+  },
+  "dependencies": {
+    "@lichess-org/chessground": "^10.2.0",
+    "@typesafe-ai/sdk": "^0.6.0",
+    "chess.js": "^1.4.0"
+  }
+}

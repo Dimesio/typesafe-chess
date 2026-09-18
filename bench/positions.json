@@ -1,0 +1,15 @@
+[
+  { "id": "start", "name": "Starting position", "category": "opening", "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" },
+  { "id": "mate1-back-rank", "name": "Back-rank mate in 1 (white)", "category": "mate in 1", "fen": "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1", "has": ["Rd8#"] },
+  { "id": "mate1-back-rank-black", "name": "Back-rank mate in 1 (black)", "category": "mate in 1", "fen": "r5k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1", "has": ["Ra1#"] },
+  { "id": "mate1-scholars", "name": "Scholar's mate in 1", "category": "mate in 1", "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", "has": ["Qxf7#"] },
+  { "id": "hanging-queen", "name": "Queen left en prise", "category": "hanging piece", "fen": "rnb1kbnr/pppp1ppp/8/4p3/4P2q/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3", "has": ["Nxh4"] },
+  { "id": "fork-knight", "name": "Knight fork on c7", "category": "fork", "fen": "r3k2r/ppp2ppp/8/3N4/8/8/PPP2PPP/R3K2R w KQkq - 0 1", "has": ["Nxc7+"] },
+  { "id": "pin-italian", "name": "Pinned knight (Bb4)", "category": "pin", "fen": "r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 5" },
+  { "id": "en-passant", "name": "En passant available", "category": "en passant", "fen": "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3", "has": ["exf6"] },
+  { "id": "promotion", "name": "Promote the f-pawn", "category": "promotion", "fen": "8/5P1k/8/8/8/8/6K1/8 w - - 0 1", "has": ["f8=Q"] },
+  { "id": "castling", "name": "Both castles available", "category": "castling", "fen": "r3k2r/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 4 8", "has": ["O-O", "O-O-O"] },
+  { "id": "stalemate-trap", "name": "Queen vs king: stalemate trap", "category": "stalemate", "fen": "k7/8/1Q6/8/8/8/8/7K w - - 0 1", "has": ["Qc7"] },
+  { "id": "quiet-qgd", "name": "Quiet middlegame", "category": "quiet", "fen": "r2q1rk1/pp2bppp/2n1pn2/3p4/3P1B2/2PBPN2/PP1N1PPP/R2QK2R w KQ - 3 9" },
+  { "id": "lucena", "name": "Lucena position", "category": "endgame", "fen": "1K1k4/1P6/8/8/8/8/r7/2R5 w - - 0 1" }
+]

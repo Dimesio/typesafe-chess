@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app-mock",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["TYPESAFE_MOCK=1", "node", "server/index.js"],
+      "port": 5173
+    },
+    {
+      "name": "app-live",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server/index.js"],
+      "port": 5173
+    },
+    {
+      "name": "app-mock-5174",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["TYPESAFE_MOCK=1", "PORT=5174", "node", "server/index.js"],
+      "port": 5174
+    }
+  ]
+}
