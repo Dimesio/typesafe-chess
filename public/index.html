@@ -34,6 +34,9 @@
       <div class="seg" data-key="strategy" role="group" aria-label="Question strategy">
         <button type="button" data-value="choice">choice</button><button type="button" data-value="noul">noul</button>
       </div>
+      <div class="field" id="foresight-field"><span class="label">foresight</span>
+        <div class="seg" data-key="foresight" id="foresight" role="group" aria-label="Foresight level (assisted only)"></div>
+      </div>
       <div class="seg" data-key="policy" role="group" aria-label="Pick policy">
         <button type="button" data-value="argmax">argmax</button><button type="button" data-value="sample">sample</button>
       </div>
@@ -83,7 +86,7 @@
         <div class="row" id="turn-actions">
           <button type="button" id="ask-again" disabled>Ask again</button>
           <button type="button" id="cancel-ask" hidden>Cancel</button>
-          <button type="button" id="compare" title="Ask all four setups (raw/assisted × choice/noul) on this position and grade them against the same analysis">Compare setups</button>
+          <button type="button" id="compare" title="Ask all four setups (raw/assisted × choice/noul, assisted at the current foresight level) on this position and grade them against the same analysis">Compare setups</button>
           <button type="button" id="next-game" class="primary" hidden>Next ladder game</button>
         </div>
         <div class="row" id="flow-row">

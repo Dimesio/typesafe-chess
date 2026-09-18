@@ -3,10 +3,10 @@
 import { Chess } from 'chess.js';
 import { choice, noul, score } from '@typesafe-ai/sdk';
 import { analyzePosition, pieceList, recentMoves, sideName } from './position.js';
+import { INFO, MAX_FORESIGHT, STRATEGIES, setupName } from '../public/setups.js';
 
-export const INFO = ['raw', 'assisted'];
-export const STRATEGIES = ['choice', 'noul'];
-export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false };
+export { INFO, STRATEGIES, setupName };
+export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0 };
 
 export const POSITION_EVAL_LEVELS = [
   'losing decisively', 'clearly worse', 'roughly equal', 'clearly better', 'winning decisively',
@@ -18,10 +18,13 @@ export function normalizeSetup(setup = {}) {
   if (!STRATEGIES.includes(s.strategy)) throw new Error(`setup.strategy must be one of ${STRATEGIES.join(', ')}`);
   s.shuffle = Boolean(s.shuffle);
   s.includeFen = Boolean(s.includeFen);
+  // Foresight facts are assisted facts, so raw is always level 0 (and recorded as 0).
+  s.foresight = s.info === 'assisted' ? Number(s.foresight ?? 0) : 0;
+  if (!Number.isInteger(s.foresight) || s.foresight < 0 || s.foresight > MAX_FORESIGHT) {
+    throw new Error(`setup.foresight must be a whole number from 0 to ${MAX_FORESIGHT}`);
+  }
   return s;
 }
-
-export const setupName = s => `${s.info}-${s.strategy}`;
 
 function shuffled(list, rng) {
   const out = [...list];
@@ -46,7 +49,7 @@ export function buildRequest({ fen, history = [], setup, rng = Math.random, orde
   if (chess.isGameOver()) throw new Error('The game is over in this position: there is no move to choose.');
   const side = sideName(chess.turn());
   const assisted = s.info === 'assisted';
-  const analysis = analyzePosition(chess, { assisted });
+  const analysis = analyzePosition(chess, { assisted, foresight: s.foresight });
 
   const state = {
     you_are: side,

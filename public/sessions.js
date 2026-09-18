@@ -2,9 +2,10 @@
 // runs/*.jsonl) into per-setup stats and performance Elo. Pure, shared with the bench.
 import { summarize } from './grading.js';
 import { performanceElo } from './elo.js';
+import { setupName } from './setups.js';
 
 export const COST_PER_INPUT_TOKEN = 0.042 / 1e6; // $0.042 per million input tokens; output is free
-export const setupKey = s => `${s.info}-${s.strategy}`;
+export const setupKey = setupName; // "assisted-choice", "assisted-choice-f2"
 
 /** The grade shape summarize() expects, rebuilt from a logged grade line. */
 export function gradeFromLine(g) {

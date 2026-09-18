@@ -93,7 +93,8 @@ input[type="number"] { width: 90px; background: var(--surface); border: 1px soli
 .seg { display: inline-flex; }
 .seg button { border-radius: 0; padding: 4px 9px; font-size: 13px; }
 .seg button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-.seg button:last-child { border-radius: 0 var(--radius) var(--radius) 0; margin-left: -1px; }
+.seg button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.seg button + button { margin-left: -1px; }
 .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); position: relative; }
 .check { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
 .badge { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }

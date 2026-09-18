@@ -30,6 +30,23 @@ test('assisted choice adds material (and hanging when present) and fact objects'
   assert.equal(request.questions.best_move.criteria.Nxe5.captures, 'a knight');
 });
 
+test('foresight: validated, recorded, 0 for raw, and passed to the move facts', () => {
+  assert.equal(normalizeSetup({}).foresight, 0);
+  assert.equal(normalizeSetup({ info: 'assisted', foresight: '2' }).foresight, 2);
+  assert.equal(normalizeSetup({ info: 'raw', foresight: 3 }).foresight, 0);
+  assert.throws(() => normalizeSetup({ info: 'assisted', foresight: 4 }), /foresight/);
+  assert.throws(() => normalizeSetup({ info: 'assisted', foresight: 1.5 }), /foresight/);
+  const fen = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  const at = foresight => buildRequest({ fen, setup: { info: 'assisted', strategy: 'choice', shuffle: false, foresight } });
+  assert.equal(at(0).request.questions.best_move.criteria.Rd2.allows_mate, undefined);
+  const l2 = at(2);
+  assert.match(l2.request.questions.best_move.criteria.Rd2.allows_mate, /checkmate/);
+  assert.equal(l2.meta.setup.foresight, 2);
+  const noul = buildRequest({ fen, setup: { info: 'assisted', strategy: 'noul', shuffle: false, foresight: 2 } });
+  const rd2 = Object.values(noul.request.questions).find(q => q.instructions?.question?.includes('Rd2'));
+  assert.match(rd2.instructions.move.allows_mate, /checkmate/);
+});
+
 test('shuffle is recorded, and the order sent matches the order recorded', () => {
   const a = buildRequest({ fen: START, setup: { shuffle: true }, rng: seeded(7) });
   const b = buildRequest({ fen: START, setup: { shuffle: false } });

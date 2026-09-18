@@ -92,7 +92,7 @@ function renderConfidence(s) {
   const W = box.clientWidth || 520;
   const H = 220;
   const pad = { l: 44, r: 12, t: 10, b: 28 };
-  const series = s.setups.filter(x => x.name.endsWith('choice') && x.confidenceBins.some(b => b.n));
+  const series = s.setups.filter(x => x.name.includes('-choice') && x.confidenceBins.some(b => b.n));
   const maxLoss = Math.max(50, ...series.flatMap(x => x.confidenceBins.map(b => b.avgLoss ?? 0)));
   const x = c => pad.l + c * (W - pad.l - pad.r);
   const y = v => pad.t + (1 - v / maxLoss) * (H - pad.t - pad.b);

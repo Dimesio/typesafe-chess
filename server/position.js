@@ -2,7 +2,8 @@
 //
 // Nothing here searches. Every fact is a rules fact about the current position or about the
 // position one ply after a candidate move, plus a static exchange evaluation (SEE) limited to
-// that move's destination square. Stockfish output never enters this module.
+// that move's destination square. Foresight levels (below) add facts about the opponent's single
+// reply. Stockfish output never enters this module.
 //
 // RAW description (setup.info = "raw"): the move's notation restated in words, nothing more.
 //   "Knight from f3 captures on e5, giving check", "Castle kingside",
@@ -44,6 +45,27 @@
 //                     "you are ahead in material by the value of two pawns: you have a knight
 //                     against a pawn", "you are behind in material by the value of a rook: the
 //                     opponent has an extra rook".
+//
+// FORESIGHT (setup.foresight, assisted only; 0 = the facts above and nothing more). Each level
+// adds one fact about the opponent's reply, after the keys above, on top of the lower levels.
+// Still rules facts from chess.js: no search beyond that one reply, and never Stockfish.
+//   1 after_their_best_capture  What the move wins, minus the opponent's best capture anywhere
+//                     on the board in reply (SEE per square, legal replies, so after a check only
+//                     the captures that answer it). Listed only when the result isn't even:
+//                     "you come out ahead by material worth a pawn", "you come out behind by
+//                     material worth a minor piece". Not listed after a stalemating move.
+//   2 allows_mate     The opponent can checkmate you in reply: "the opponent can then checkmate
+//                     you: Queen from d3 moves to h7, giving checkmate".
+//   3 allows_fork     The opponent has a reply after which two or more of your pieces are newly
+//                     hanging (same test as above, attacks ignoring pins and check), or which gives
+//                     check and leaves one newly hanging; and you can't simply take the piece that
+//                     moved (it isn't hanging to you). "Newly" means not already hanging right after
+//                     your move. The piece you'd lose (the best one after a check, else the second
+//                     best) must be worth at least a minor piece: a fork that only wins a pawn
+//                     fired twice as often and was a blunder less often. The first such reply:
+//                     "the opponent's knight can go to d2 and
+//                     attack your rook on b1 and rook on f1 at once", "the opponent's knight can go
+//                     to f3 with check and attack your rook on e1". Mating replies are left to level 2.
 //
 // Piece values for these facts: pawn 1, knight 3, bishop 3, rook 5, queen 9. The king is never
 // counted as hanging.
@@ -172,6 +194,9 @@ function attackMap(chess, byColor) {
   return map;
 }
 
+/** Types of the side to move's pieces with a legal capture of the piece on `square`, en passant included. */
+const captureMapTakers = (chess, square) => [...(captureMap(chess).get(square)?.values() ?? [])];
+
 /** The opponent's legal captures as if it were their turn (null move), or null when in check. */
 function opponentCaptureMap(chess) {
   if (chess.inCheck()) return null;
@@ -206,20 +231,30 @@ function hangingPieces(chess, color, opponentCaptures, { exclude } = {}) {
 }
 
 /**
- * Static exchange evaluation: what the side to move gains by capturing the piece on `square`
- * with its cheapest legal capturer, then letting both sides continue or stop. Mutates `chess`
- * but restores it. Returns a value ≥ 0 in pawns.
+ * The side to move's legal captures of the piece on `square`, found from the pieces attacking it
+ * (in board order, as chess.js lists moves). Much cheaper than generating every legal move. Not
+ * for en passant, which only the first capture of an exchange can be.
  */
-function seeGain(chess, square, legal = chess.moves({ verbose: true })) {
-  const captures = legal
-    .filter(m => m.captured && victimSquare(m) === square)
+function capturesOnto(chess, square) {
+  const out = [];
+  for (const from of chess.attackers(square, chess.turn())) {
+    for (const m of chess.moves({ square: from, verbose: true })) if (m.captured && m.to === square) out.push(m);
+  }
+  return out;
+}
+
+/**
+ * Static exchange evaluation: what the side to move gains by capturing the piece on `square`
+ * with its cheapest legal capturer, then letting both sides continue or stop. `legal`: the side's
+ * legal moves when already known. Returns a value ≥ 0 in pawns.
+ */
+function seeGain(chess, square, legal = null) {
+  const captures = (legal ? legal.filter(m => m.captured && victimSquare(m) === square) : capturesOnto(chess, square))
     .sort((a, b) => VALUE[a.piece] - VALUE[b.piece] || (b.promotion === 'q') - (a.promotion === 'q'));
   if (!captures.length) return 0;
   const m = captures[0];
   const gain = VALUE[m.captured] + (m.promotion ? VALUE[m.promotion] - 1 : 0);
-  chess.move({ from: m.from, to: m.to, promotion: m.promotion });
-  const reply = seeGain(chess, m.to); // after en passant the capturer stands on `to`, not `square`
-  chess.undo();
+  const reply = seeGain(new Chess(m.after), m.to); // after en passant the capturer stands on `to`, not `square`
   return Math.max(0, gain - reply);
 }
 
@@ -257,8 +292,37 @@ function materialFact(chess) {
   return `${balance}: ${imbalance}`;
 }
 
-/** ASSISTED description for one legal move `m` of the side to move in `chess`. */
-function describeAssisted(chess, m, threats) {
+/**
+ * Foresight level 3: the first opponent reply in `post` (you = `me`) that attacks two of your
+ * pieces at once, or gives check and attacks one, with a forking piece you can't simply take.
+ * Each reply's position comes from its `after` FEN: chess.js's move() regenerates every legal
+ * move, which made this level take seconds per position.
+ */
+function forkInWords(post, replies, me) {
+  const opp = other(me);
+  const already = new Set(hangingPieces(post, me, attackMap(post, opp)).map(p => p.square));
+  for (const r of replies) {
+    if (r.san.endsWith('#')) continue;
+    const pos = new Chess(r.after);
+    const check = pos.inCheck();
+    const fresh = hangingPieces(pos, me, attackMap(pos, opp)).filter(p => !already.has(p.square));
+    // What you'd lose: the best piece after a check (you must answer it), else the second best
+    // (you save the best one). A fork that only wins a pawn isn't reported.
+    const values = fresh.map(p => VALUE[p.type]).sort((a, b) => b - a);
+    if ((check ? values[0] : values[1] ?? 0) < 3) continue;
+    const forker = pos.get(r.to);
+    // A pawn that just advanced two squares can also be taken en passant.
+    const takers = (r.flags.includes('b') ? captureMapTakers(pos, r.to) : capturesOnto(pos, r.to).map(m => m.piece));
+    if (isHanging(VALUE[forker.type], takers, pos.attackers(r.to, opp).length)) continue;
+    const targets = fresh.map(p => `${PIECE_NAMES[p.type]} on ${p.square}`);
+    const list = targets.length > 1 ? `${targets.slice(0, -1).join(', ')} and ${targets.at(-1)}` : targets[0];
+    return `the opponent's ${PIECE_NAMES[forker.type]} can go to ${r.to}${check ? ' with check' : ''} and attack your ${list}${targets.length > 1 ? ' at once' : ''}`;
+  }
+  return null;
+}
+
+/** ASSISTED description for one legal move `m` of the side to move in `chess`, with foresight facts up to `foresight`. */
+function describeAssisted(chess, m, threats, foresight = 0) {
   const me = chess.turn();
   const facts = { move: describeRaw(m) };
   if (m.captured) facts.captures = `a ${PIECE_NAMES[m.captured]}`;
@@ -285,8 +349,8 @@ function describeAssisted(chess, m, threats) {
     if (isHanging(movedValue, attackers, defenders.length)) facts.lands_on.hanging = true;
   }
 
+  const gained = (m.captured ? VALUE[m.captured] : 0) + (m.promotion ? VALUE[m.promotion] - 1 : 0);
   if (m.captured || attackers.length) {
-    const gained = (m.captured ? VALUE[m.captured] : 0) + (m.promotion ? VALUE[m.promotion] - 1 : 0);
     facts.exchange_on_square = exchangeInWords(gained - seeGain(post, m.to, replies));
   }
 
@@ -309,17 +373,33 @@ function describeAssisted(chess, m, threats) {
     else answers.push(`defends ${name}`);
   }
   if (answers.length) facts.answers_threat = answers.join('; ');
+
+  if (foresight >= 1 && !facts.stalemate) {
+    let theirBest = 0;
+    for (const square of theirCaptures.keys()) theirBest = Math.max(theirBest, seeGain(post, square, replies));
+    const net = gained - theirBest;
+    if (net) facts.after_their_best_capture = `you come out ${net > 0 ? 'ahead' : 'behind'} by material worth ${materialInWords(Math.abs(net))}`;
+  }
+  if (foresight >= 2) {
+    const mate = replies.find(r => r.san.endsWith('#')); // chess.js marks a mating move in its SAN
+    if (mate) facts.allows_mate = `the opponent can then checkmate you: ${describeRaw(mate)}`;
+  }
+  if (foresight >= 3) {
+    const fork = forkInWords(post, replies, me);
+    if (fork) facts.allows_fork = fork;
+  }
   return facts;
 }
 
 /**
  * Everything the question builder needs about a position.
  * @param {Chess} chess  Position with the side to move = Jev.
- * @param {{ assisted?: boolean }} options  Skip the assisted analysis for raw setups.
+ * @param {{ assisted?: boolean, foresight?: number }} options  Skip the assisted analysis for
+ *   raw setups; foresight adds the reply facts up to that level (assisted only).
  * @returns {{ moves: Array<{ san, uci, from, to, piece, captured?, promotion?, raw, assisted? }>,
  *             hanging?: { yours?: string[], opponent?: string[] }, material?: string }}
  */
-export function analyzePosition(chess, { assisted = true } = {}) {
+export function analyzePosition(chess, { assisted = true, foresight = 0 } = {}) {
   const me = chess.turn();
   const legal = chess.moves({ verbose: true });
   const out = {};
@@ -344,7 +424,7 @@ export function analyzePosition(chess, { assisted = true } = {}) {
     ...(m.captured && { captured: m.captured }),
     ...(m.promotion && { promotion: m.promotion }),
     raw: describeRaw(m),
-    ...(assisted && { assisted: describeAssisted(chess, m, threats) }),
+    ...(assisted && { assisted: describeAssisted(chess, m, threats, foresight) }),
   }));
   return out;
 }

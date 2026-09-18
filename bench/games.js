@@ -9,11 +9,9 @@ import { rng32 } from './calibrate.js';
 import { playerMove } from '../public/baselines.js';
 import { ladderAfter, ladderRungs, ladderStart, nearestRung, ratingOf } from '../public/ratings.js';
 import { strengthLabel } from '../public/engine.js';
+import { parseSetupName } from '../public/setups.js';
 
-const setupOf = name => {
-  const [info, strategy] = name.split('-');
-  return { info, strategy, shuffle: true, includeFen: false };
-};
+const setupOf = name => ({ ...parseSetupName(name), shuffle: true, includeFen: false });
 
 async function playGame({ jev, limiter, grader, write, setup, jevColor, rung, calibration, depth, maxPlies, policy, rng, log }) {
   const gameId = randomUUID();

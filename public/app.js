@@ -14,6 +14,7 @@ import { CAP, EVAL_LEVELS as LEVELS, UNDECIDED_CP, capCp, formatEval, gradeDecis
 import { moveQualityElo } from './elo.js';
 import { decisionLine as buildDecisionLine, gradeLine } from './loglines.js';
 import * as api from './api.js';
+import { FORESIGHT, setupName } from './setups.js';
 
 const $ = id => document.getElementById(id);
 const EVAL_LEVELS = LEVELS;
@@ -38,7 +39,7 @@ const legacyPlayers = { 'play-w': { w: 'human', b: 'jev' }, 'play-b': { w: 'jev'
 const state = {
   game: null,
   players: store.get('players', legacyPlayers ?? { w: 'human', b: 'human' }),
-  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, ...store.get('setup', {}) },
+  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, ...store.get('setup', {}) },
   policy: store.get('policy', 'argmax'),
   flow: store.get('flow', 'step'), // step: computer moves wait for Play; auto: they play themselves
   delay: store.get('delay', 500),
@@ -63,7 +64,6 @@ const state = {
 
 const PLAYER_NAMES = { human: 'Me', jev: 'Jev', stockfish: 'Stockfish' };
 const sideWord = c => (c === 'w' ? 'White' : 'Black');
-const setupName = s => `${s.info}-${s.strategy}`;
 const pct = p => `${(p * 100).toFixed(p > 0 && p < 0.1 ? 1 : 0)}%`;
 const playerName = (players, c) => PLAYER_NAMES[players[c]];
 const hasPlayer = (players, kind) => players.w === kind || players.b === kind;
@@ -499,13 +499,12 @@ const ALL_SETUPS = [['raw', 'choice'], ['raw', 'noul'], ['assisted', 'choice'], 
 function runSetups(g, index, setups, kind, playing = null) {
   const fen = g.fenAt(index);
   const history = g.historyAt(index);
-  const entry = { kind, index, fen, playing, rows: setups.map(([info, strategy]) => ({ info, strategy })) };
+  const entry = { kind, index, fen, playing, rows: setups.map(([info, strategy]) => ({ info, strategy, setup: { ...state.setup, info, strategy } })) };
   g.compares ??= new Map();
   g.compares.set(index, entry);
   render();
   for (const row of entry.rows) {
-    const setup = { ...state.setup, info: row.info, strategy: row.strategy };
-    api.askJev({ fen, history, setup, ...(state.model && { model: state.model }) })
+    api.askJev({ fen, history, setup: row.setup, ...(state.model && { model: state.model }) })
       .then(response => {
         const d = { id: newId(), gameId: g.id, index, fen, policy: state.policy, response,
           chosen: chooseMove(response, state.policy), player: g.players[fen.split(' ')[1]], kind };
@@ -561,7 +560,7 @@ function exportPgn() {
       const gr = d.grade && (ply.by === 'jev' ? (d.grade.chosen ?? d.grade.pick) : null);
       const parts = [ply.by === 'override' ? 'override' : 'jev', p !== undefined && `p=${p.toFixed(2)}`,
         r.confidence !== null && `conf=${r.confidence.toFixed(2)}`, gr && `loss=${Math.round(gr.loss)}`, gr?.label && `label=${gr.label}`,
-        `setup=${r.setup.info}/${r.setup.strategy}`, d.grade && `depth=${d.grade.depth}`, r.mock && 'mock'].filter(Boolean);
+        `setup=${setupName(r.setup)}`, d.grade && `depth=${d.grade.depth}`, r.mock && 'mock'].filter(Boolean);
       chess.setComment(parts.join(' '));
     } else if (ply.by === 'stockfish' && em) {
       chess.setComment(`stockfish ${strengthLabel(em.strength)}`);
@@ -723,7 +722,7 @@ function renderCompare() {
     const tr = table.insertRow();
     if (row.playing) tr.className = 'playing';
     const cell = (text, cls = '') => tr.append(Object.assign(document.createElement('td'), { textContent: text, className: cls }));
-    cell(`${row.info}-${row.strategy}`);
+    cell(setupName(row.decision?.response.setup ?? row.setup));
     const d = row.decision;
     if (row.error) { cell(row.error, 'left lbl-blunder'); continue; }
     if (!d) { cell('asking…', 'left muted'); continue; }
@@ -1089,9 +1088,15 @@ function renderNav() {
 function renderTop() {
   for (const seg of document.querySelectorAll('#setup .seg')) {
     const key = seg.dataset.key;
-    const value = key === 'policy' ? state.policy : state.setup[key];
-    for (const b of seg.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.value === value));
+    const value = String(key === 'policy' ? state.policy : state.setup[key]);
+    for (const b of seg.querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', String(b.dataset.value === value));
+      if (key === 'foresight') b.disabled = state.setup.info === 'raw';
+    }
   }
+  $('foresight-field').title = state.setup.info === 'raw'
+    ? 'Foresight facts are assisted facts: raw gets none.'
+    : 'How far ahead the move descriptions look: facts about the opponent\'s reply. Each level adds one fact.';
   $('shuffle').checked = state.setup.shuffle;
   $('include-fen').checked = state.setup.includeFen;
   $('player-w').value = state.players.w;
@@ -1267,11 +1272,19 @@ function wire() {
   $('engine-save').onclick = saveEngineSettings;
   $('engine-cancel').onclick = () => $('engine-dialog').close();
 
+  $('foresight').replaceChildren(...FORESIGHT.map(l => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', textContent: String(l.level), title: l.title });
+    b.dataset.value = String(l.level);
+    return b;
+  }));
   for (const seg of document.querySelectorAll('#setup .seg')) {
     for (const b of seg.querySelectorAll('button')) {
       b.onclick = () => {
         if (seg.dataset.key === 'policy') { state.policy = b.dataset.value; store.set('policy', state.policy); }
-        else { state.setup[seg.dataset.key] = b.dataset.value; store.set('setup', state.setup); }
+        else {
+          state.setup[seg.dataset.key] = seg.dataset.key === 'foresight' ? Number(b.dataset.value) : b.dataset.value;
+          store.set('setup', state.setup);
+        }
         renderTop();
       };
     }

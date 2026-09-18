@@ -184,3 +184,81 @@ test('raw analysis skips the assisted facts', () => {
   assert.equal(a.material, undefined);
   assert.ok(a.moves.every(m => m.assisted === undefined));
 });
+
+// ---------- foresight levels (setup.foresight) ----------
+
+const withForesight = (fen, san, foresight) => {
+  const m = analyzePosition(new Chess(fen), { foresight }).moves.find(x => x.san === san);
+  assert.ok(m, `${san} should be legal in ${fen}`);
+  return m.assisted;
+};
+const FORESIGHT_KEYS = ['after_their_best_capture', 'allows_mate', 'allows_fork'];
+
+test('foresight 0 (the default) adds nothing', () => {
+  for (const [fen, san] of [['6k1/8/8/1n3n2/3N4/8/8/3R2K1 w - - 0 1', 'Kh1'], ['4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1', 'Rd2'],
+    ['6k1/8/8/8/3n4/8/P7/4R1K1 w - - 0 1', 'a3']]) {
+    const facts = move(fen, san).assisted;
+    assert.deepEqual(withForesight(fen, san, 0), facts);
+    assert.ok(FORESIGHT_KEYS.every(k => !(k in facts)));
+  }
+});
+
+test('foresight 1: net material after their best capture, which the hanging test can miss', () => {
+  // The d4 knight is attacked by two knights and defended once by the rook: not "hanging" (the
+  // attackers aren't cheaper), but Nxd4 wins it, since recapturing would lose the rook.
+  const fen = '6k1/8/8/1n3n2/3N4/8/8/3R2K1 w - - 0 1';
+  const kh1 = withForesight(fen, 'Kh1', 1);
+  assert.deepEqual(kh1, { move: 'King from g1 moves to h1', after_their_best_capture: 'you come out behind by material worth a minor piece' });
+  assert.equal(withForesight(fen, 'Rd2', 1).after_their_best_capture, 'you come out behind by material worth a minor piece', 'the rook still defends only once');
+  assert.equal(withForesight(fen, 'Nxb5', 1).after_their_best_capture, 'you come out ahead by material worth a minor piece');
+  // Even outcomes are left out.
+  assert.equal(withForesight('4k3/8/8/8/8/8/P7/4K3 w - - 0 1', 'a3', 1).after_their_best_capture, undefined);
+  // A move that hangs the rook for nothing.
+  assert.equal(withForesight('4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1', 'Rd8', 1).after_their_best_capture, 'you come out behind by material worth a rook');
+});
+
+test('foresight 1 after a check counts only the captures that answer it', () => {
+  // Qxe6+: the pawn recaptures (the only answer is to take the queen or move the king).
+  const facts = withForesight('4k3/3p4/4p3/8/8/8/4Q3/4K3 w - - 0 1', 'Qxe6+', 1);
+  assert.equal(facts.after_their_best_capture, 'you come out behind by material worth a rook and a minor piece');
+});
+
+test('foresight 2: a reply that mates', () => {
+  const fen = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  assert.equal(withForesight(fen, 'Rd2', 2).allows_mate, 'the opponent can then checkmate you: Rook from e8 moves to e1, giving checkmate');
+  assert.equal(withForesight(fen, 'Rd2', 1).allows_mate, undefined, 'level 1 does not look for mates');
+  assert.equal(withForesight(fen, 'h3', 2).allows_mate, undefined, 'the king has an escape square');
+  assert.equal(withForesight(fen, 'Kf1', 2).allows_mate, undefined);
+});
+
+test('foresight 3: forks, with check, and forks the forked side can answer by taking', () => {
+  const kr = '6k1/8/8/8/3n4/8/P7/4R1K1 w - - 0 1';
+  assert.equal(withForesight(kr, 'a3', 3).allows_fork, 'the opponent\'s knight can go to f3 with check and attack your rook on e1');
+  assert.equal(withForesight(kr, 'a3', 2).allows_fork, undefined, 'level 2 does not look for forks');
+  assert.equal(withForesight(kr, 'Kh1', 3).allows_fork, undefined, 'Nf3 then attacks only the rook, without check');
+  assert.equal(withForesight(kr, 'Re3', 3).allows_fork, undefined);
+  // With a pawn on g2, Nf3+ can be answered by gxf3. Nc2 still attacks the a3 pawn and the rook,
+  // but saving the rook only loses a pawn, which isn't reported as a fork.
+  assert.equal(withForesight('6k1/8/8/8/3n4/8/P5P1/4R1K1 w - - 0 1', 'a3', 3).allows_fork, undefined);
+  // Two rooks at once, no check.
+  const rr = '6k1/8/8/8/4n3/8/P7/1R3R1K w - - 0 1';
+  assert.match(withForesight(rr, 'a3', 3).allows_fork, /^the opponent's knight can go to (d2 and attack your rook on b1 and rook on f1 at once|g3 with check and attack your rook on f1)$/);
+  // A piece that is already hanging after your move (here the rook on f2) is reported by the
+  // level 0 facts, never as a fork target.
+  const already = withForesight(rr, 'Rf2', 3);
+  assert.equal(already.lands_on.hanging, true);
+  assert.ok(!(already.allows_fork ?? '').includes('f2'));
+});
+
+test('foresight levels are cumulative and add their facts after the level 0 ones', () => {
+  const fen = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  const rd8 = withForesight(fen, 'Rd8', 3);
+  const keys = Object.keys(rd8);
+  assert.deepEqual(keys.slice(0, 4), ['move', 'lands_on', 'exchange_on_square', 'after_their_best_capture']);
+  const l0 = Object.keys(withForesight(fen, 'Rd8', 0));
+  assert.deepEqual(keys.slice(0, l0.length), l0);
+});
+
+test('a mating move lists no foresight facts: the game ends', () => {
+  assert.deepEqual(withForesight('6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', 'Ra8#', 3), { move: 'Rook from a1 moves to a8, giving checkmate', checkmate: 'checkmate: you win the game' });
+});

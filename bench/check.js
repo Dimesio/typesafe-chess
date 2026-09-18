@@ -2,6 +2,7 @@
 // of already graded decisions at a greater depth and measure how much the verdicts change.
 import { rng32 } from './calibrate.js';
 import { gradeDecision } from '../public/grading.js';
+import { setupName } from '../public/setups.js';
 
 export async function runCheck({ lines, depth, sample, grader, write, log, seed = 99 }) {
   const decisions = new Map(lines.filter(l => l.type === 'decision').map(l => [l.decision_id, l]));
@@ -27,7 +28,7 @@ export async function runCheck({ lines, depth, sample, grader, write, log, seed 
     const pickUci = d.moves.find(m => m.san === d.pick)?.uci;
     const g1 = gradeDecision({ lines: a.lines, moves: d.moves, pickUci, positionEval: d.position_eval });
     const row = {
-      decision_id: d.decision_id, fen: d.fen, setup: `${d.setup.info}-${d.setup.strategy}`,
+      decision_id: d.decision_id, fen: d.fen, setup: setupName(d.setup),
       base_depth: g0.depth, depth, base_best: g0.best_ucis, deep_best: g1.bestUcis,
       best_agrees: g1.bestUcis.some(u => g0.best_ucis.includes(u)),
       base_loss: g0.pick_loss, deep_loss: g1.pick.loss, base_label: g0.pick_label, deep_label: g1.pick.label,

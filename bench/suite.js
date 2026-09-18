@@ -6,6 +6,7 @@ import { Chess } from 'chess.js';
 import { gradedDecision, parallel } from './common.js';
 import { rng32 } from './calibrate.js';
 import { isUndecided } from '../public/grading.js';
+import { parseSetupName } from '../public/setups.js';
 
 /** Order variants for one position: [{ kind, order }]. */
 export function orderVariants(fen, shuffles, seed) {
@@ -58,12 +59,12 @@ export async function runSuite(opts) {
   positions.forEach((pos, pi) => {
     const variants = orderVariants(pos.fen, shuffles, 100 + pi);
     for (const name of setups) {
-      const [info, strategy] = name.split('-');
+      const parsed = parseSetupName(name);
       for (const v of variants) {
         tasks.push(async () => {
           try {
             await gradedDecision({
-              ...opts, fen: pos.fen, setup: { info, strategy, shuffle: false, includeFen: false }, order: v.order,
+              ...opts, fen: pos.fen, setup: { ...parsed, shuffle: false, includeFen: false }, order: v.order,
               gameId: `suite:${runId}:${pos.id}`, ply: 0, players: { w: 'jev', b: 'jev' },
               extra: { suite: true, position_id: pos.id, category: pos.category, order_kind: v.kind },
             });

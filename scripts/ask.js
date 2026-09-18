@@ -1,10 +1,11 @@
 // Ask Jev about one position with one or more setups and print the distributions.
-//   node scripts/ask.js --fen "<fen>" [--setups raw-choice,assisted-choice,raw-noul,assisted-noul]
+//   node scripts/ask.js --fen "<fen>" [--setups raw-choice,assisted-choice,raw-noul,assisted-noul,assisted-choice-f3]
 //                       [--history "e4 e5 Nf3"] [--no-shuffle] [--include-fen] [--top 8] [--json]
 // Uses the live API when a key is present (TYPESAFE_MOCK=1 for the mock).
 import { parseArgs } from 'node:util';
 import { createJev } from '../server/typesafe.js';
 import { askJev } from '../server/jev.js';
+import { parseSetupName } from '../public/setups.js';
 
 const { values } = parseArgs({
   options: {
@@ -25,8 +26,7 @@ const all = [];
 
 console.log(`${jev.mock ? 'MOCK' : 'live'} | ${values.fen}`);
 for (const name of values.setups.split(',')) {
-  const [info, strategy] = name.split('-');
-  const setup = { info, strategy, shuffle: !values['no-shuffle'], includeFen: values['include-fen'] };
+  const setup = { ...parseSetupName(name), shuffle: !values['no-shuffle'], includeFen: values['include-fen'] };
   try {
     const res = await askJev({ fen: values.fen, history, setup }, { jev });
     all.push({ name, ...res });

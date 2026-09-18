@@ -8,11 +8,13 @@
 //   Report:       npm run bench -- --report runs/bench-a.jsonl runs/bench-b.jsonl …
 //   Everything:   npm run bench -- --all  (suite, games, check and report)
 // Common: [--rps 8] [--concurrency 8] [--workers 8] [--mock]. Uses the live API when a key exists.
+// Setup names are info-strategy with an optional foresight level (assisted only): assisted-choice-f2.
 import { parseArgs } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { calibrate } from './calibrate.js';
+import { parseSetupName } from '../public/setups.js';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -86,6 +88,7 @@ const { buildReport, reportMarkdown } = await import('./report.js');
 const calibration = await loadCalibration();
 const depth = num(values.depth) ?? calibration?.depth ?? 12;
 const setups = values.setups.split(',');
+setups.forEach(parseSetupName); // fail before any request on a bad name
 const written = [];
 
 async function withJev(fn) {

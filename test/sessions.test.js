@@ -78,3 +78,15 @@ test('confidence bins and cost', () => {
   assert.equal(ac.confidenceBins[4].avgLoss, 0);
   assert.ok(Math.abs(ac.cost - 2000 * 0.042 / 1e6) < 1e-12);
 });
+
+test('foresight levels are separate setups; level 0 keeps the M5 name', () => {
+  const f = level => ({ ...setup('assisted', 'choice'), foresight: level });
+  const lines = [
+    decision('f0', 'gf', { ply: 0, setup: setup('assisted', 'choice') }), grade('f0', 100), // logged before foresight existed
+    decision('f0b', 'gf', { ply: 1, setup: f(0) }), grade('f0b', 60),
+    decision('f2', 'gf', { ply: 2, setup: f(2) }), grade('f2', 0),
+    decision('r3', 'gf', { ply: 3, setup: { ...setup('raw', 'choice'), foresight: 3 } }), grade('r3', 10),
+  ];
+  const names = buildSession(lines).setups.map(s => `${s.name}:${s.decisions}`);
+  assert.deepEqual(names, ['assisted-choice:2', 'assisted-choice-f2:1', 'raw-choice:1']);
+});

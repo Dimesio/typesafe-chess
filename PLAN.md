@@ -181,6 +181,28 @@ have a knight against a pawn").
 rules facts limited to one ply plus a single-square SEE, with no search. Document every fact in
 `position.js` and cover each one with a unit test.
 
+### Foresight levels (`setup.foresight`, assisted only; added 2026-09-18)
+A separate, opt-in dimension. Level 0 is the assisted setup above, unchanged. Each level adds
+one fact about the opponent's reply, on top of the level below, so level N against N − 1
+measures that one fact. The facts are still rules facts from chess.js: they look at the
+opponent's single reply and never at Stockfish.
+1. `after_their_best_capture`: what the move wins, minus the opponent's best capture anywhere
+   in reply (SEE per square), in words, only when it isn't even.
+2. `allows_mate`: the opponent can checkmate in reply, naming the move.
+3. `allows_fork`: a reply that attacks two of your pieces at once (or gives check and attacks
+   one), with a forking piece you can't simply take, and costing you at least a minor piece.
+   Counting pawn-only forks doubled how often it fired, with fewer of the flagged moves being
+   blunders (23% against 33%).
+- **Why these, in this order:** a first pass over assisted Jev's logged blunders (63 unique).
+  Level 1's number ranked the best move above Jev's pick in 28 of them and never below. Level 2
+  is rare but almost always a blunder. Level 3 is noisier. Pins and skewers were pure noise, and
+  "threatens" facts never explained a blunder, so they aren't levels.
+- **Setup names** carry the level (`public/setups.js`): `assisted-choice` is level 0 (the M5
+  name), `assisted-choice-f2` is level 2. Raw has no levels. The dashboard and bench report
+  never pool levels. Bench: `--setups assisted-choice-f1,assisted-noul-f3`.
+- **Cost:** one analysis takes up to about 180 ms at level 3 on a 48-move position (65 ms at
+  level 0), after reading reply positions from their FEN instead of chess.js `move()`.
+
 ### Questions
 - **Strategy A, Choice (default).** One Choice over all legal moves:
   ```js
