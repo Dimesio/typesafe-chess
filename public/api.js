@@ -29,5 +29,11 @@ export const getStatus = () => fetch('/api/status').then(r => r.json());
 export const getPositions = () => fetch('/api/positions').then(r => (r.ok ? r.json() : []));
 /** The Elo calibration from the bench (M4), or null before it has been run. */
 export const getCalibration = () => fetch('/api/calibration').then(r => (r.ok ? r.json() : null));
+/** The live lessons' summary and the frozen books: { live: { rev, promoted, … }, books: [...] }. */
+export const getLessons = () => fetch('/api/lessons').then(async r => {
+  const data = await r.json();
+  if (!r.ok) throw new Error(formatError(data.error, r.status));
+  return data;
+});
 export const askJev = (body, signal) => postJson('/api/jev', body, signal);
 export const postLog = lines => postJson('/api/log', lines);

@@ -10,6 +10,8 @@ export function decisionLine(d, { players, start }, extra = {}) {
     order: r.order, moves: r.moves.map(({ san, uci, p, noul }) => ({ san, uci, p, ...(noul !== undefined && { noul }) })),
     pick: r.pick.san, chosen: d.chosen.san, chosen_how: d.chosen.how, confidence: r.confidence,
     position_eval: r.positionEval, model: r.model, usage: r.usage, latency_ms: r.latencyMs, mock: r.mock,
+    ...(r.lessonHits && { lesson_hits: r.lessonHits }),
+    ...(r.lessonRev !== undefined && { lesson_rev: r.lessonRev }),
     ...extra,
   };
 }

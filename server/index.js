@@ -8,6 +8,8 @@ import { Chess } from 'chess.js';
 import { TypeSafeError } from '@typesafe-ai/sdk';
 import { createJev } from './typesafe.js';
 import { askJev, DEFAULT_MODEL } from './jev.js';
+import { listBooks } from './book.js';
+import { liveLearner } from './learner.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PORT = Number(process.env.PORT ?? 5173);
@@ -143,6 +145,11 @@ const server = createServer(async (req, res) => {
     if (req.method === 'POST' && pathname === '/api/log') return await handleLog(req, res);
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'method not allowed' });
     if (pathname === '/api/runs') return await handleRuns(res);
+    if (pathname === '/api/lessons') {
+      const learner = liveLearner(jev.mock);
+      await learner.catchUp();
+      return send(res, 200, { live: learner.summary(), books: listBooks() });
+    }
     if (pathname === '/api/status') {
       return send(res, 200, { mock: jev.mock, reason: jev.mock ? jev.reason : null, defaultModel: DEFAULT_MODEL });
     }
@@ -158,4 +165,9 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   const mode = jev.mock ? `MOCK (${jev.reason})` : `live (${jev.reason})`;
   console.log(`TypeSafe Chess on http://localhost:${PORT}, Jev: ${mode}`);
+  // Read the logs now, so the first live-lessons ask doesn't wait for it.
+  const learner = liveLearner(jev.mock, { log: msg => console.log(msg) });
+  learner.catchUp()
+    .then(() => console.log(`Live lessons: learned from ${learner.records} graded ${jev.mock ? 'mock ' : ''}decisions.`))
+    .catch(err => console.error(`Live lessons: ${err.message}`));
 });

@@ -105,7 +105,7 @@ Scripts: `npm start` (serves on http://localhost:5173), `npm test`, `npm run ben
 ### `POST /api/jev`
 Request:
 ```json
-{ "fen": "…", "history": ["e4","e5","Nf3"], "setup": { "info": "raw|assisted", "strategy": "choice|noul", "shuffle": true, "includeFen": false, "foresight": 0 }, "model": "jev-latest" }
+{ "fen": "…", "history": ["e4","e5","Nf3"], "setup": { "info": "raw|assisted", "strategy": "choice|noul", "shuffle": true, "includeFen": false, "foresight": 0, "lessons": 0, "book": null }, "model": "jev-latest" }
 ```
 Response:
 ```json
@@ -179,7 +179,8 @@ have a knight against a pawn").
 
 **Fairness rules:** Stockfish output never enters Jev's state or criteria. Assisted facts are
 rules facts limited to one ply plus a single-square SEE, with no search. Document every fact in
-`position.js` and cover each one with a unit test.
+`position.js` and cover each one with a unit test. The one exception is the opt-in lesson levels
+below, which the user asked for on 2026-09-19.
 
 ### Foresight levels (`setup.foresight`, assisted only; added 2026-09-18)
 A separate, opt-in dimension. Level 0 is the assisted setup above, unchanged. Each level adds
@@ -205,6 +206,92 @@ opponent's single reply and never at Stockfish.
 - **Result on the suite (FINDINGS.md §7):** level 1 cut undecided cp loss by 9 (choice) and 17
   (noul) and blunders by about a third. Levels 2 and 3 were heeded but added nothing
   measurable. Games are next.
+
+### Lessons: the feedback loop (`setup.lessons`, assisted only; added 2026-09-19)
+Jev's graded failures become **lessons**, and a setup can show Jev what they say. This is the
+one place where Stockfish's grades reach Jev's input. The user chose it on 2026-09-19, with
+exact-position memory included, knowing that memory passes Stockfish's verdict on a specific
+move straight to Jev. It's opt-in and named in the setup, so stats never pool it with the setups
+above. TypeSafe has no fine-tuning or feedback API, so the only lever is the input.
+- **Live by default (the user's call, 2026-09-19): no script step, and the logs are the
+  reference.**
+  - Each Jev decision and its grade are appended to `runs/*.jsonl` as they happen: by the UI
+    through `POST /api/log`, and by the bench directly.
+  - Before every ask with live lessons, the learner (`server/learner.js`) reads what was
+    appended since the last ask. It joins decisions with their grades, runs the pattern
+    detectors on new positions (cached in `lessons/cache/`), and folds the records into the
+    miner (`server/mine.js`).
+  - A blunder graded a second ago is remembered on the next ask in that position. In mock, the
+    next ask after Qxd6?? was graded already showed "remembered here: Qxd6".
+  - The server reads all the logs at startup: 59 MB and 14k graded decisions in about 2 s once
+    the cache exists. Each process (the server, a bench run) has its own learner, and they agree
+    because they read the same logs.
+  - A mock server learns only from mock decisions, and a live one only from real ones.
+- **Setup names:** `assisted-noul-f1-L2live` is foresight 1 with lessons level 2, live.
+  `…-L2b1` uses **frozen book 1** instead: a copy of the lessons that doesn't change, for runs
+  that need a fixed setup.
+  - `npm run lessons` writes a report on the live lessons (`lessons/live.md`), and `--freeze`
+    saves them as the next frozen book.
+  - Book 1 was mined and accepted before the switch to live.
+  - Live decisions log `lesson_rev` (how many graded decisions the lessons had learned from),
+    so a learning curve can be plotted.
+  - A live setup pools decisions made with different lessons: that's what learning means. For
+    a before/after comparison, freeze.
+- **Levels** (`server/lessons.js` documents the exact wording). Each level adds one fact on top of
+  the level below, after all other facts. Level 0 sends exactly the request without lessons
+  (unit-tested).
+  1. `lesson`: the promoted patterns that match the move, as one statement plus what happened
+     before: "This move leaves you behind in material after the opponent's best capture and
+     passes up another move that comes out further ahead in material. In your past games,
+     moves like that were usually mistakes." The patterns are chess.js facts: the assisted and
+     foresight facts as predicates, plus `passes_up_material` (another move comes out a minor
+     piece or more further ahead). They're detected at the foresight level they need, and the
+     setup still shows only its own foresight facts.
+  2. `last_time_here`: Jev picked this move in this exact position before (same pieces, side,
+     castling and en passant), and it was graded a mistake or blunder.
+- **Learning rules** (`server/mine.js`, the same live and frozen):
+  - **Held out:** the suite's positions (`bench/positions.json`, `bench/suite-sampled.json`) are
+    never learned from, not even by memory. Otherwise a suite run would teach itself the answers
+    across its 5 option orders. The report measures every pattern on them separately. Keep
+    suite runs at `--sample 100` or less, because a bigger sample draws positions that weren't
+    held out. The UI's test-position menu reads the same file, so asks there don't teach
+    anything either; the decision panel says so.
+  - **Failures:** a failure is a pick graded mistake or blunder. Pattern statistics use
+    undecided positions only (±500 cp, as for the Elo curve). In decided positions nothing is a
+    failure, and on the first run that made every pattern look like noise.
+  - **Pick statistics** use assisted setups only, because those are the only setups a lesson can
+    reach. The memory takes every failed pick in any setup.
+  - **Promotion:** a pattern is promoted when it explains at least 10 training failures (it
+    matches the pick and no best move). Assisted picks with it must also fail at least 2× as
+    often as assisted picks overall, and at least 50% of all legal moves with it must be
+    failures. The lesson says "usually" when at least 75% are failures, else "often". Live
+    promotions can change as data comes in.
+- **First results (book 1 and the live lessons on 2026-09-19, about 14,000 graded decisions):**
+  - **Promoted:** `passes_up_material` ("usually") and `behind_after_reply` ("often").
+    - `passes_up_material`: 80% of the legal moves with it are failures in training (90% held
+      out), and 74% of assisted picks with it failed (100% of 48 held out). The base rate is 9%.
+    - `behind_after_reply`: 67% and 70% of moves with it are failures, and 28% of picks failed.
+  - **Not promoted:**
+    - `lands_hanging`: assisted Jev's picks with it fail only 1.1× as often as its other picks.
+      It already heeds that fact.
+    - `allows_fork`: fewer than half of the moves with it are failures.
+    - `allows_mate` and `exchange_loses`: too few training failures.
+  - **No pattern explains 58%** of assisted failures. Most are deep tactics, where the best move
+    is a quiet one that one-ply facts even mark as losing.
+  - **Memory:** about 394 failed moves in 390 positions. Replaying the logs in order, only 20
+    decisions came in a remembered position, and 7 repeated a remembered failure (all made
+    without memory).
+- **Cost:** with the first lessons at foresight 1, lessons match about 60% of legal moves, and
+  the request is about 35% larger. The Jev docs warn that extra state can hurt, so measure
+  tokens as well as loss. A live ask also waits for the catch-up: one pattern analysis (up to
+  about 0.2 s) per newly graded position.
+- **Reading results:** the suite measures level 1 on positions the lessons never saw. Memory only
+  matters where positions repeat, which means games. A `-L2` setup's performance Elo is Jev
+  plus a record of Stockfish's verdicts on positions it has played before, not Jev alone.
+- **In the app:** the top bar has a "lessons 0 1 2" control and a picker for live or a frozen
+  book (both disabled for raw). The decision panel shows how many moves were warned, what was
+  remembered, and how many graded decisions the live lessons had learned from. Decision lines
+  log `lesson_hits`. `LESSONS_DIR` points the server at another lessons folder.
 
 ### Questions
 - **Strategy A, Choice (default).** One Choice over all legal moves:

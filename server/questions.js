@@ -3,10 +3,11 @@
 import { Chess } from 'chess.js';
 import { choice, noul, score } from '@typesafe-ai/sdk';
 import { analyzePosition, pieceList, recentMoves, sideName } from './position.js';
-import { INFO, MAX_FORESIGHT, STRATEGIES, setupName } from '../public/setups.js';
+import { applyLessons, neededForesight } from './lessons.js';
+import { INFO, MAX_FORESIGHT, MAX_LESSONS, STRATEGIES, setupName } from '../public/setups.js';
 
 export { INFO, STRATEGIES, setupName };
-export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0 };
+export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, lessons: 0, book: null };
 
 export const POSITION_EVAL_LEVELS = [
   'losing decisively', 'clearly worse', 'roughly equal', 'clearly better', 'winning decisively',
@@ -23,6 +24,19 @@ export function normalizeSetup(setup = {}) {
   if (!Number.isInteger(s.foresight) || s.foresight < 0 || s.foresight > MAX_FORESIGHT) {
     throw new Error(`setup.foresight must be a whole number from 0 to ${MAX_FORESIGHT}`);
   }
+  // Lessons are assisted facts too. With lessons off there is no book (recorded as null).
+  s.lessons = s.info === 'assisted' ? Number(s.lessons ?? 0) : 0;
+  if (!Number.isInteger(s.lessons) || s.lessons < 0 || s.lessons > MAX_LESSONS) {
+    throw new Error(`setup.lessons must be a whole number from 0 to ${MAX_LESSONS}`);
+  }
+  if (s.lessons) {
+    if (s.book !== 'live') s.book = Number(s.book);
+    if (s.book !== 'live' && (!Number.isInteger(s.book) || s.book < 1)) {
+      throw new Error('setup.book must be "live" or a frozen lesson book (1, 2, …) when lessons are on');
+    }
+  } else {
+    s.book = null;
+  }
   return s;
 }
 
@@ -36,20 +50,34 @@ function shuffled(list, rng) {
 }
 
 /**
- * @param {{ fen: string, history?: string[], setup?: object, rng?: () => number, order?: string[] }} input
+ * @param {{ fen: string, history?: string[], setup?: object, rng?: () => number, order?: string[], book?: object }} input
  *   history: SAN moves that led to `fen` (may be empty, e.g. after loading a position).
  *   order: an explicit option order (every legal SAN once), overriding setup.shuffle. The bench
  *   uses it to measure order bias.
- * @returns {{ request: { state, questions }, meta: { fen, side, setup, order: string[], moves } }}
+ *   book: the lessons setup.book names (server/learner.js for 'live', server/book.js for a
+ *   frozen book), needed when setup.lessons > 0.
+ * @returns {{ request: { state, questions }, meta: { fen, side, setup, order: string[], moves, lessonHits } }}
  *   `request` is the exact payload (minus model) sent to TypeSafe. `meta.moves` is in the order sent.
+ *   `meta.lessonHits` (null without lessons): the moves that got a lesson or a memory.
  */
-export function buildRequest({ fen, history = [], setup, rng = Math.random, order = null }) {
+export function buildRequest({ fen, history = [], setup, rng = Math.random, order = null, book = null }) {
   const s = normalizeSetup(setup);
   const chess = new Chess(fen);
   if (chess.isGameOver()) throw new Error('The game is over in this position: there is no move to choose.');
   const side = sideName(chess.turn());
   const assisted = s.info === 'assisted';
-  const analysis = analyzePosition(chess, { assisted, foresight: s.foresight });
+  let analysis;
+  let lessonHits = null;
+  if (s.lessons) {
+    if (book?.version !== s.book) throw new Error(`This setup needs lesson book ${s.book}.`);
+    // Patterns may need more foresight than the setup shows; applyLessons strips the extra facts.
+    analysis = analyzePosition(chess, { assisted, foresight: Math.max(s.foresight, neededForesight(book)) });
+    const applied = applyLessons({ fen, moves: analysis.moves, book, level: s.lessons, foresight: s.foresight });
+    analysis = { ...analysis, moves: applied.moves };
+    lessonHits = applied.hits;
+  } else {
+    analysis = analyzePosition(chess, { assisted, foresight: s.foresight });
+  }
 
   const state = {
     you_are: side,
@@ -98,7 +126,7 @@ export function buildRequest({ fen, history = [], setup, rng = Math.random, orde
   const metaMoves = moves.map(({ raw, assisted: _a, ...rest }) => rest);
   return {
     request: { state, questions },
-    meta: { fen, side, setup: s, order: moves.map(m => m.san), moves: metaMoves },
+    meta: { fen, side, setup: s, order: moves.map(m => m.san), moves: metaMoves, lessonHits },
   };
 }
 

@@ -14,7 +14,7 @@ import { CAP, EVAL_LEVELS as LEVELS, UNDECIDED_CP, capCp, formatEval, gradeDecis
 import { moveQualityElo } from './elo.js';
 import { decisionLine as buildDecisionLine, gradeLine } from './loglines.js';
 import * as api from './api.js';
-import { FORESIGHT, setupName } from './setups.js';
+import { FORESIGHT, LESSONS, setupName } from './setups.js';
 
 const $ = id => document.getElementById(id);
 const EVAL_LEVELS = LEVELS;
@@ -39,7 +39,9 @@ const legacyPlayers = { 'play-w': { w: 'human', b: 'jev' }, 'play-b': { w: 'jev'
 const state = {
   game: null,
   players: store.get('players', legacyPlayers ?? { w: 'human', b: 'human' }),
-  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, ...store.get('setup', {}) },
+  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, lessons: 0, book: null, ...store.get('setup', {}) },
+  books: [], // frozen lesson books (GET /api/lessons); the live lessons are always there
+  live: null, // the live lessons' summary: { rev, promoted, memory_positions, memory_moves }
   policy: store.get('policy', 'argmax'),
   flow: store.get('flow', 'step'), // step: computer moves wait for Play; auto: they play themselves
   delay: store.get('delay', 500),
@@ -318,6 +320,7 @@ async function ask(index = state.game.cursor) {
     }
     d.attempt = g.addDecision(index, d);
     log(decisionLine(d));
+    if (response.lessonRev !== undefined && state.live) state.live.rev = response.lessonRev;
     requestGrade(d);
     if (state.shadow && d.player === 'jev') runSetups(g, index, otherSetups(response.setup), 'shadow', response.setup);
     render();
@@ -871,6 +874,13 @@ function renderDecision() {
       }
       items.push(btn);
     }
+  if (r.lessonHits) {
+    const lessons = Object.keys(r.lessonHits.lessons).length;
+    const memory = Object.keys(r.lessonHits.memory);
+    const source = r.lessonRev === undefined ? ` (book ${r.setup.book})`
+      : ` (live, learned from ${r.lessonRev} graded decisions${r.lessonHeldOut ? '; a suite position, never learned from' : ''})`;
+    items.push(stat('lessons', `${lessons} ${lessons === 1 ? 'move' : 'moves'} warned${r.setup.lessons >= 2 ? `; remembered here: ${memory.join(', ') || 'none'}` : ''}${source}`));
+  }
   } else if (d.gradeJob?.error) {
     items.push(stat('grading failed', d.gradeJob.error, 'lbl-blunder'));
   }
@@ -1116,11 +1126,23 @@ function go(i) {
 }
 
 function askPromotion(color, done) {
+      if (key === 'lessons') b.disabled = state.setup.info === 'raw';
   const el = $('promo');
   el.replaceChildren(...['queen', 'rook', 'bishop', 'knight'].map(role => {
     const b = document.createElement('button');
     b.type = 'button';
     b.title = `Promote to a ${role}`;
+  const book = $('book');
+  const option = (value, text, title) => Object.assign(document.createElement('option'), { value, textContent: text, title });
+  const live = state.live;
+  book.replaceChildren(
+    option('live', 'live', live ? `Learns from every graded decision as it is logged. Now: ${live.rev} decisions, ${live.promoted.join(', ') || 'no patterns yet'}, memory of ${live.memory_moves} moves.` : 'Learns from every graded decision as it is logged.'),
+    ...state.books.map(b => option(String(b.version), `book ${b.version}`, `Frozen: ${b.promoted.join(', ') || 'no patterns'}; memory of ${b.memory_moves} moves in ${b.memory_positions} positions`)),
+  );
+  book.value = String(state.setup.book ?? 'live');
+  book.disabled = state.setup.info === 'raw' || !state.setup.lessons;
+  $('lessons-field').title = state.setup.info === 'raw' ? 'Lessons are assisted facts: raw gets none.'
+    : 'What Jev\'s graded failures taught. 1: warnings on moves that match patterns that were often mistakes. 2: also moves that were mistakes in this exact position before. "live" learns from each grade as it arrives; a numbered book is frozen.';
     b.append(pieceEl(color, role));
     b.onclick = e => { e.stopPropagation(); el.hidden = true; done(role); };
     return b;
@@ -1272,17 +1294,21 @@ function wire() {
   $('engine-save').onclick = saveEngineSettings;
   $('engine-cancel').onclick = () => $('engine-dialog').close();
 
-  $('foresight').replaceChildren(...FORESIGHT.map(l => {
+  const levelButtons = levels => levels.map(l => {
     const b = Object.assign(document.createElement('button'), { type: 'button', textContent: String(l.level), title: l.title });
     b.dataset.value = String(l.level);
     return b;
-  }));
+  });
+  $('foresight').replaceChildren(...levelButtons(FORESIGHT));
+  $('lessons').replaceChildren(...levelButtons(LESSONS));
   for (const seg of document.querySelectorAll('#setup .seg')) {
     for (const b of seg.querySelectorAll('button')) {
       b.onclick = () => {
         if (seg.dataset.key === 'policy') { state.policy = b.dataset.value; store.set('policy', state.policy); }
         else {
-          state.setup[seg.dataset.key] = seg.dataset.key === 'foresight' ? Number(b.dataset.value) : b.dataset.value;
+          const numeric = seg.dataset.key === 'foresight' || seg.dataset.key === 'lessons';
+          state.setup[seg.dataset.key] = numeric ? Number(b.dataset.value) : b.dataset.value;
+          if (seg.dataset.key === 'lessons') state.setup.book = state.setup.lessons ? (state.setup.book ?? 'live') : null;
           store.set('setup', state.setup);
         }
         renderTop();
@@ -1343,6 +1369,11 @@ function wire() {
 }
 
 async function init() {
+  $('book').onchange = e => {
+    state.setup.book = e.target.value === 'live' ? 'live' : Number(e.target.value);
+    store.set('setup', state.setup);
+    renderTop();
+  };
   wire();
   window.addEventListener('resize', () => renderTimeline());
   api.getCalibration().then(c => { state.calibration = c; renderStats(); }).catch(() => {});
@@ -1362,3 +1393,9 @@ async function init() {
 }
 
 init();
+    ({ live: state.live, books: state.books } = await api.getLessons());
+    // A stored setup can name a frozen book that is gone: use the live lessons instead.
+    if (state.setup.lessons && state.setup.book !== 'live' && !state.books.some(b => b.version === state.setup.book)) {
+      state.setup.book = 'live';
+      store.set('setup', state.setup);
+    }

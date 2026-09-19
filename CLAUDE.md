@@ -23,12 +23,16 @@ from the legal moves, and Stockfish grades each pick. **The full design and mile
   expectation. Finding out what Jev can do is the point of the app. Measurement ranges (the
   Elo ladder, grading depth) must be able to show any result, from the bottom to the top.
 - Code owns the rules (chess.js); Jev only chooses. Stockfish is **only a grader**: its output
-  must never reach Jev's state or criteria.
-- Keep `raw` and `assisted` setups exactly as PLAN.md §3 defines them. If you add an assisted
-  fact, document it in `server/position.js` and add a unit test.
-- Foresight levels (`setup.foresight`, PLAN.md §3) are separate and opt-in. Level 0 must stay
-  identical to plain assisted. A new lookahead fact is a new level on top, never a change to a
-  lower one, and needs the same documentation and unit test.
+  must never reach Jev's state or criteria. The **one exception is lesson levels**
+  (`setup.lessons`, PLAN.md §3 "Lessons"), which the user chose on 2026-09-19, memory
+  included. Grades reach Jev only through the lessons: live ones, learned from the logged
+  grades before each ask (`server/learner.js`), or a frozen book (`lessons/book-vN.json`).
+- Lesson levels are opt-in and named in the setup (`-LNlive`, `-LNbM`), like foresight.
+  - Level 0 must stay identical to the setup without lessons.
+  - A new pattern goes in `server/lessons.js`, with its documentation and a unit test, and
+    needs a new `PATTERN_VERSION`.
+  - Never edit a frozen book; freeze a new one.
+  - Keep the suite positions held out of learning, and keep mock and real learning apart.
 - Keep the state small and list only facts that apply. Jev is weak at counting, arithmetic and
   large irrelevant state (see PLAN.md §1).
 - Don't gate or override Jev's pick based on confidence. Log it instead.
@@ -42,6 +46,14 @@ from the legal moves, and Stockfish grades each pick. **The full design and mile
   asks Jev about one position and prints each setup's distribution (live when a key exists)
 - Setup names everywhere are `info-strategy` plus an optional foresight level for assisted:
   `assisted-choice-f2` (`public/setups.js`). Level 0 has no suffix, so M5 names still match.
+  Lessons add `-L<level>live` (learning live) or `-L<level>b<N>` (frozen book N):
+  `assisted-noul-f1-L2live`.
+- Live lessons need no command: the server and the bench learn from `runs/*.jsonl` before each
+  ask. The server reads all the logs at startup (about 2 s).
+  - `npm run lessons` writes a report on them to `lessons/live.md`.
+  - `--freeze` saves them as the next frozen book (`lessons/book-vN.json`), and `--list` lists
+    the books.
+  - `LESSONS_DIR=<folder>` points the server and the command at another lessons folder.
 - `node scripts/verify-live.js` re-runs the M0 API checks
 - `npm run bench -- --calibrate` rates the Elo ladder and fits the cp loss → Elo curve. It writes
   `bench/elo-calibration.json` and takes about an hour on 10 workers. `--quick` is a
@@ -232,6 +244,26 @@ lost it (PLAN.md §4 "Why a pool and a hold").
   - Levels 1–2 beat the 1646 and 1700 rungs for the first time.
 - 87 unit tests pass.
 
+**Lessons loop (2026-09-19, at the user's request, PLAN.md §3 "Lessons"):**
+- **Code:**
+  - `server/lessons.js`: patterns, `applyLessons`, and levels 1 `lesson` and 2
+    `last_time_here`.
+  - `server/mine.js`: the joiner and the incremental miner.
+  - `server/learner.js`: the live learner, which tails `runs/*.jsonl`.
+  - `server/patterns-worker.js`, `server/book.js`, `scripts/lessons.js`, `GET /api/lessons`,
+    and a "lessons 0 1 2" control with a picker for live or a frozen book.
+- **Log lines:** decision lines carry `lesson_hits` and, when live, `lesson_rev`.
+- **Live first:** the user first chose command + review, and book 1 was mined and accepted
+  that way. They then asked for live learning, which is now the default.
+- **Current lessons:**
+  - Promoted: `passes_up_material` and `behind_after_reply`.
+  - Memory: about 394 moves in 390 positions.
+  - 58% of assisted failures match no pattern.
+  - Lessons match about 60% of moves, and the request is about 35% larger at foresight 1.
+- **Tested in mock:** a blunder (Qxd6??) was remembered on the very next ask once graded, and
+  the count of graded decisions learned from went up with each ask. Not measured live yet.
+  102 unit tests pass.
+
 **Open follow-ups** (FINDINGS.md "Next steps"):
 - ladder rungs between greedy capture (≤ 1026) and skill 0 at depth 1 (1517)
 - the deeper check (`--check 60 --from runs/bench-suite-… runs/bench-games-…`)
@@ -240,3 +272,7 @@ lost it (PLAN.md §4 "Why a pool and a hold").
 - lost-position grades that take 10–120 s. Any fix changes the grading method, such as a node
   cap or not solving mates past the ±1000 cap. It would then need the bench and a new
   calibration, so it's the user's call.
+- lessons:
+  - bench `-L1live` on the suite and `-L1live`/`-L2live` in games against the same setup
+    without lessons, then plot loss against `lesson_rev`
+  - write detectors for the unexplained failures in `lessons/live.md`

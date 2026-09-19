@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node server/index.js",
     "test": "node --test",
-    "bench": "node bench/run.js"
+    "bench": "node bench/run.js",
+    "lessons": "node scripts/lessons.js"
   },
   "dependencies": {
     "@lichess-org/chessground": "^10.2.0",
