@@ -6,7 +6,9 @@ API. Every number below comes from these log files:
 - `runs/bench-games-2026-09-18T13-43-11-677Z.jsonl`: 79 finished games, 2,978 decisions
 - `runs/summary-2026-09-18T13-58-06-270Z.md`: the generated report
 - Section 7 (foresight levels, the same evening): `runs/bench-suite-2026-09-18T22-58-07-870Z.jsonl`,
-  4,520 decisions, and its report `runs/summary-2026-09-18T23-10-21-562Z.md`
+  4,520 decisions, and its report `runs/summary-2026-09-18T23-10-21-562Z.md`; games in
+  `runs/bench-games-2026-09-19T01-00-00-427Z.jsonl` (58 games, 2,294 decisions) and
+  `runs/summary-2026-09-19T01-17-11-437Z.md`
 
 Re-run the report with `npm run bench -- --report <files>`.
 
@@ -183,6 +185,30 @@ All five orders; the report's suite table uses the fixed order only.
 - **Cost:** level 1 adds about 15% input tokens and 20–35 ms of latency, since the server
   computes the facts.
 
+**Games.** 20 ladder games each for assisted-noul at levels 0, 1 and 2. The run was stopped
+after 58 games: a level 0 game sat on one grade for over 4 minutes (a lost position; see the
+grading caveat in CLAUDE.md). Its unfinished game's decisions are in the log without a result.
+
+| setup | games | vs rated rungs (W/D/L) | performance Elo | vs random/greedy | undecided cp loss (n) |
+|---|---|---|---|---|---|
+| assisted-noul (level 0) | 18 | 3/1/12 | 1356 [1143–1568] | 2 W | 98 (404) |
+| assisted-noul-f1 | 20 | 4/2/10 | 1494 [1298–1691] | 4 W | 91 (406) |
+| assisted-noul-f2 | 20 | 6/1/11 | 1529 [1348–1709] | 2 W | 99 (321) |
+
+- **Performance Elo rises with the level**, the same direction as the suite. Levels 1 and 2 beat
+  rungs above the bottom one for the first time: skill 0 at 150k nodes (1646) and Elo 1320 at
+  150k nodes (1700).
+- **But it's within noise.** Level 0 itself did far better tonight than this morning against
+  skill 0 at depth 1 (1517): 3 W, 1 D and 6 L, against 0 of 6. That's the same model
+  (`jev-1.13.0`) and identical input, against a rung that plays randomized moves. Pooling both
+  level 0 runs gives 1260 [1060–1460] from 26 rated games. So levels 1–2 gain somewhere around
+  140–270 Elo, with overlapping intervals.
+- **Move quality in games didn't show the suite's gain:** undecided cp loss 98, 91 and 99. The
+  ladder confounds this: a setup that wins meets stronger opponents and harder positions.
+- **Where that leaves Jev:** with foresight, assisted-noul plays at about the ladder's bottom
+  rated rung, and both performance Elo and the suite's move-quality estimate now say so. That's
+  up from "between greedy capture and the bottom rung".
+
 ## Caveats
 - **Small samples.** There were 20 games per setup, and only 7–14 of each counted toward
   performance Elo. The ± ranges are 95% intervals and are wide. The suite has 105 undecided
@@ -209,7 +235,8 @@ All five orders; the report's suite table uses the fixed order only.
    a unit test per CLAUDE.md), measured with this same suite.
 4. **Use the confidence ≥ 0.8 signal** (assisted-choice) in analysis. It predicts good
    moves, so log it for decisions; don't gate on it.
-5. **Play ladder games at foresight levels 1 and 2**, e.g. `npm run bench -- --games 20
-   --setups assisted-noul,assisted-noul-f1,assisted-noul-f2`. The suite says level 1 helps
-   and level 2 is free. Games will show whether that holds where mates and forks are common,
-   and give a performance Elo to set against the move-quality estimate.
+5. **More games at foresight levels 0–2.** The first 58 (section 7) point the same way as the
+   suite but can't separate the levels: 16–18 rated games each give ±200 Elo intervals, and
+   run-to-run noise was as large as the effect. About 60 games per setup would halve the
+   intervals. Slow lost-position grades stall bench games, so settle the grading follow-up
+   (CLAUDE.md) first or expect stalls.

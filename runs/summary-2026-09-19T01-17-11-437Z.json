@@ -1,0 +1,266 @@
+{
+  "sources": [
+    "runs/bench-games-2026-09-19T01-00-00-427Z.jsonl"
+  ],
+  "report": {
+    "games": [
+      {
+        "setup": "assisted-noul",
+        "decisions": 780,
+        "graded": 780,
+        "summary": {
+          "n": 780,
+          "accuracy": 86.52047412475714,
+          "avgLoss": 82.6576923076923,
+          "lossSE": 5.077074819840027,
+          "undecided": {
+            "n": 404,
+            "avgLoss": 97.93316831683168,
+            "lossSE": 6.908454775623118
+          },
+          "blunders": 15,
+          "mistakes": 23,
+          "inaccuracies": 50,
+          "top1": 0.36666666666666664,
+          "avgPBest": 0.21764640861524887,
+          "avgExpectedLoss": 186.14673658092977,
+          "confLossR": null,
+          "evalAgreement": 0.4705128205128205,
+          "confusion": [
+            [
+              150,
+              257,
+              6,
+              16,
+              0
+            ],
+            [
+              2,
+              40,
+              22,
+              4,
+              0
+            ],
+            [
+              0,
+              41,
+              137,
+              5,
+              0
+            ],
+            [
+              0,
+              7,
+              12,
+              13,
+              0
+            ],
+            [
+              0,
+              9,
+              4,
+              28,
+              27
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 16,
+          "wins": 3,
+          "draws": 1,
+          "losses": 12,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 16,
+            "elo": 1355.7660733565244,
+            "low": 1143.2791691838274,
+            "high": 1568.2529775292214
+          }
+        },
+        "latencyMs": 209.68589743589743,
+        "inputTokens": 2803.3115384615385,
+        "cost": 0.09183648600000001
+      },
+      {
+        "setup": "assisted-noul-f1",
+        "decisions": 769,
+        "graded": 769,
+        "summary": {
+          "n": 769,
+          "accuracy": 87.44067755466476,
+          "avgLoss": 72.21456436931079,
+          "lossSE": 4.840853117208572,
+          "undecided": {
+            "n": 406,
+            "avgLoss": 90.93349753694581,
+            "lossSE": 6.8778869384621695
+          },
+          "blunders": 12,
+          "mistakes": 20,
+          "inaccuracies": 62,
+          "top1": 0.4434330299089727,
+          "avgPBest": 0.2749306497939496,
+          "avgExpectedLoss": 177.29215907853057,
+          "confLossR": null,
+          "evalAgreement": 0.42912873862158646,
+          "confusion": [
+            [
+              56,
+              180,
+              40,
+              16,
+              0
+            ],
+            [
+              1,
+              38,
+              26,
+              8,
+              0
+            ],
+            [
+              0,
+              35,
+              120,
+              35,
+              0
+            ],
+            [
+              0,
+              12,
+              14,
+              15,
+              0
+            ],
+            [
+              0,
+              3,
+              3,
+              66,
+              101
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 16,
+          "wins": 4,
+          "draws": 2,
+          "losses": 10,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 16,
+            "elo": 1494.3169115823803,
+            "low": 1297.7574377346598,
+            "high": 1690.8763854301008
+          }
+        },
+        "latencyMs": 214.1040312093628,
+        "inputTokens": 3065.8283485045513,
+        "cost": 0.09902012400000001
+      },
+      {
+        "setup": "assisted-noul-f2",
+        "decisions": 745,
+        "graded": 745,
+        "summary": {
+          "n": 745,
+          "accuracy": 87.89091452620696,
+          "avgLoss": 70.41476510067115,
+          "lossSE": 4.494366113468752,
+          "undecided": {
+            "n": 321,
+            "avgLoss": 98.70093457943925,
+            "lossSE": 8.281868314200015
+          },
+          "blunders": 19,
+          "mistakes": 23,
+          "inaccuracies": 47,
+          "top1": 0.45503355704697984,
+          "avgPBest": 0.31117228119148954,
+          "avgExpectedLoss": 184.70822541536424,
+          "confLossR": null,
+          "evalAgreement": 0.5597315436241611,
+          "confusion": [
+            [
+              79,
+              98,
+              10,
+              5,
+              0
+            ],
+            [
+              0,
+              10,
+              6,
+              14,
+              0
+            ],
+            [
+              0,
+              41,
+              139,
+              17,
+              0
+            ],
+            [
+              1,
+              14,
+              23,
+              21,
+              0
+            ],
+            [
+              0,
+              11,
+              9,
+              79,
+              168
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "perf": {
+          "games": 18,
+          "wins": 6,
+          "draws": 1,
+          "losses": 11,
+          "sources": [
+            "calibrated"
+          ],
+          "elo": {
+            "n": 18,
+            "elo": 1528.525965114156,
+            "low": 1348.0509469077979,
+            "high": 1709.000983320514
+          }
+        },
+        "latencyMs": 215.08859060402685,
+        "inputTokens": 3547.1919463087247,
+        "cost": 0.11099163600000002
+      }
+    ],
+    "suite": [],
+    "order": [],
+    "curated": [],
+    "check": null,
+    "session": {
+      "perfGames": 50,
+      "ineligible": 8
+    }
+  }
+}

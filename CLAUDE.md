@@ -225,13 +225,18 @@ lost it (PLAN.md §4 "Why a pool and a hold").
   - Levels 2 and 3 were heeded but added nothing measurable.
   - assisted-noul-f1's move-quality estimate (1718 [1517–1772]) is the first one inside the
     rated range.
+- **Live games** (58 of 60, stopped on a 4-minute lost-position grade, FINDINGS.md §7):
+  - assisted-noul performance Elo was 1356 at level 0, 1494 at level 1 and 1529 at level 2.
+    Level 0 pooled with M5 is 1260.
+  - That's the same direction as the suite, but within noise: the intervals are about ±200.
+  - Levels 1–2 beat the 1646 and 1700 rungs for the first time.
 - 87 unit tests pass.
 
 **Open follow-ups** (FINDINGS.md "Next steps"):
 - ladder rungs between greedy capture (≤ 1026) and skill 0 at depth 1 (1517)
 - the deeper check (`--check 60 --from runs/bench-suite-… runs/bench-games-…`)
 - `includeFen` and more assisted facts, tested one at a time
-- ladder games at foresight levels 1 and 2 (FINDINGS.md next step 5)
+- more ladder games at foresight levels 0–2 (FINDINGS.md next step 5); slow grades stall them
 - lost-position grades that take 10–120 s. Any fix changes the grading method, such as a node
   cap or not solving mates past the ±1000 cap. It would then need the bench and a new
   calibration, so it's the user's call.
