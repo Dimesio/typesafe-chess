@@ -264,6 +264,18 @@ lost it (PLAN.md §4 "Why a pool and a hold").
   the count of graded decisions learned from went up with each ask. Not measured live yet.
   102 unit tests pass.
 
+**Ladder stays in one mode (2026-09-19, at the user's request, PLAN.md §4):**
+- The app's ladder used to walk every calibrated rung across modes, so it hopped from Elo to
+  skill to random or greedy. It now moves only the Elo (steps of 400, minimum 50) or the skill
+  level (steps of 4, minimum 1) of the chosen mode, starting from the current setting.
+- At the end of a range it says which mode reaches further instead of switching.
+- Skill levels without a calibration rung are unrated, so those games don't count toward
+  performance Elo.
+- The bench ladder is unchanged. `ladder` log lines now carry `ladder_mode` and `edge`
+  instead of `next_target`.
+- Tested in mock: Elo 1500 → 1320 → bottom notice, and skill 10 → 6 → 2 → 0 → bottom notice.
+  104 unit tests pass.
+
 **Open follow-ups** (FINDINGS.md "Next steps"):
 - ladder rungs between greedy capture (≤ 1026) and skill 0 at depth 1 (1517)
 - the deeper check (`--check 60 --from runs/bench-suite-… runs/bench-games-…`)

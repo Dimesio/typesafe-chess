@@ -1,5 +1,5 @@
-// Opponent ratings and the adaptive ladder's rungs (PLAN.md §4). Pure.
-import { DEFAULT_STRENGTH, ELO_RANGE, strengthId, strengthLabel } from './engine.js';
+// Opponent ratings and the adaptive ladder (PLAN.md §4). Pure.
+import { DEFAULT_STRENGTH, ELO_RANGE, SKILL_RANGE, strengthId, strengthLabel } from './engine.js';
 import { ladderNext } from './elo.js';
 
 /**
@@ -30,8 +30,44 @@ export function ratingOf(strength, calibration) {
 }
 
 /**
- * The ladder: every calibrated rung, sorted by rating. Without a calibration, UCI_Elo settings
- * every 100 points from 1320 to 3190 at their nominal ratings.
+ * The app's ladder moves one setting of the mode chosen in the Stockfish dialog and never
+ * changes the mode: UCI_Elo in Elo mode, Skill Level in skill mode. Other modes have nothing to
+ * move. `unit` keeps values on the dialog's input step.
+ */
+export const LADDER_SETTINGS = {
+  elo: { key: 'elo', range: ELO_RANGE, unit: 10, step: 400, minStep: 50 },
+  skill: { key: 'skill', range: SKILL_RANGE, unit: 1, step: 4, minStep: 1 },
+};
+
+/** The middle of a mode's range, on its unit (Elo 2260, skill 10). */
+export function ladderMiddle(mode) {
+  const { range: [lo, hi], unit } = LADDER_SETTINGS[mode];
+  return lo + Math.round((hi - lo) / 2 / unit) * unit;
+}
+
+/** A fresh ladder for `mode` with the full step, or null for a mode the ladder can't move. */
+export function settingLadderStart(mode) {
+  const s = LADDER_SETTINGS[mode];
+  return s ? { mode, step: s.step, lastDir: 0 } : null;
+}
+
+/**
+ * After a game: Jev's score (1, 0.5, 0) moves the setting up or down within the mode, halving
+ * the step on each change of direction. `edge` is 'top' or 'bottom' when Jev beat the top of the
+ * range or lost to its bottom, so the ladder can't follow. Only the ladder's setting changes.
+ */
+export function settingLadderAfter(ladder, strength, score) {
+  const s = LADDER_SETTINGS[strength.mode];
+  const value = strength[s.key];
+  const [min, max] = s.range;
+  const next = ladderNext({ opp: value, step: ladder.step, lastDir: ladder.lastDir }, score, { min, max, minStep: s.minStep });
+  const edge = score === 1 && value >= max ? 'top' : score === 0 && value <= min ? 'bottom' : null;
+  return { strength: { ...strength, [s.key]: next.opp }, step: next.step, lastDir: next.lastDir, edge };
+}
+
+/**
+ * The bench's ladder: every calibrated rung, sorted by rating, across modes. Without a
+ * calibration, UCI_Elo settings every 100 points from 1320 to 3190 at their nominal ratings.
  */
 export function ladderRungs(calibration, nodes = DEFAULT_STRENGTH.nodes) {
   if (calibration?.rungs?.length) {

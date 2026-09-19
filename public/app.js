@@ -8,7 +8,7 @@ import { BRUSHES, LETTER, bestShape, colorName, engineShape, jevShapes, legalDes
 import { Editor } from './editor.js';
 import { DEFAULT_STRENGTH, ELO_RANGE, Engine, NODES_RANGE, SKILL_RANGE, isScripted, strengthLabel } from './engine.js';
 import { playerMove } from './baselines.js';
-import { ladderAfter, ladderRungs, ladderStart, nearestRung, ratingOf } from './ratings.js';
+import { LADDER_SETTINGS, ladderMiddle, ratingOf, settingLadderAfter, settingLadderStart } from './ratings.js';
 import { Grader, PRIORITY } from './grader.js';
 import { CAP, EVAL_LEVELS as LEVELS, UNDECIDED_CP, capCp, formatEval, gradeDecision, labelFor, scoreToCp, summarize, winPct } from './grading.js';
 import { moveQualityElo } from './elo.js';
@@ -28,10 +28,20 @@ const store = {
   set(key, value) { try { localStorage.setItem(`tsc:${key}`, JSON.stringify(value)); } catch { /* ignore */ } },
 };
 
-/** Settings saved before the switch to node budgets used a think time: drop it for the default nodes. */
+/**
+ * Settings saved before the switch to node budgets used a think time: drop it for the default
+ * nodes. The old ladder could also leave a calibration rung's `searchDepth`, which the dialog
+ * can't show: drop it too.
+ */
 function migrateStrength(saved) {
-  const { movetime, ...rest } = saved;
+  const { movetime, searchDepth, ...rest } = saved;
   return { ...DEFAULT_STRENGTH, ...rest };
+}
+
+/** The old ladder aimed at a rating (`target`) across all rungs; the ladder now moves one setting. */
+function loadLadder() {
+  const { target, ...saved } = store.get('ladder', {});
+  return { on: false, alternate: true, mode: null, step: null, lastDir: 0, ...saved };
 }
 
 const legacyPlayers = { 'play-w': { w: 'human', b: 'jev' }, 'play-b': { w: 'jev', b: 'human' } }[store.get('mode')];
@@ -46,7 +56,7 @@ const state = {
   flow: store.get('flow', 'step'), // step: computer moves wait for Play; auto: they play themselves
   delay: store.get('delay', 500),
   engine: migrateStrength(store.get('engine', {})),
-  ladder: { on: false, alternate: true, target: null, step: 400, lastDir: 0, ...store.get('ladder', {}) },
+  ladder: loadLadder(), // mode: the engine mode it's moving (null until it starts)
   shadow: store.get('shadow', false),
   humanRating: store.get('humanRating', null),
   gradeDepth: store.get('gradeDepth', 12),
@@ -129,7 +139,7 @@ function opponentInfo(players) {
     const r = ratingOf(state.engine, state.calibration);
     out.opponent = { kind: 'stockfish', strength: { ...state.engine }, rating: r?.rating ?? null, rating_source: r?.source ?? null,
       ...(r?.bound && { rating_bound: r.bound }) };
-    if (state.ladder.on) out.ladder = { target: state.ladder.target, step: state.ladder.step };
+    if (state.ladder.on && state.ladder.mode === state.engine.mode) out.ladder = { mode: state.ladder.mode, step: state.ladder.step };
   } else if (opp === 'human') {
     out.opponent = { kind: 'human', rating: state.humanRating, rating_source: state.humanRating ? 'entered' : null };
   }
@@ -310,6 +320,7 @@ async function ask(index = state.game.cursor) {
     const response = await api.askJev({ fen, history, setup: { ...state.setup }, ...(state.model && { model: state.model }) }, controller.signal);
     if (state.pending?.controller !== controller) return;
     state.pending = null;
+    if (response.lessonRev !== undefined && state.live) state.live.rev = response.lessonRev;
     const d = { id: newId(), gameId: g.id, index, fen, policy, response, chosen: chooseMove(response, policy),
       player: g.players[fen.split(' ')[1]] };
     // The position may have changed while Jev was answering: never attach a late answer to it.
@@ -320,7 +331,6 @@ async function ask(index = state.game.cursor) {
     }
     d.attempt = g.addDecision(index, d);
     log(decisionLine(d));
-    if (response.lessonRev !== undefined && state.live) state.live.rev = response.lessonRev;
     requestGrade(d);
     if (state.shadow && d.player === 'jev') runSetups(g, index, otherSetups(response.setup), 'shadow', response.setup);
     render();
@@ -445,36 +455,48 @@ function statGroups(g) {
 
 const isLadderGame = players => ['w', 'b'].filter(c => players[c] === 'jev').length === 1 && hasPlayer(players, 'stockfish');
 
-/** Starts the ladder in the middle of its range and sets Stockfish to the nearest rung. */
+/**
+ * Starts the ladder from Stockfish's current setting, with the full step, when it isn't already
+ * moving this mode. The ladder never changes the mode (PLAN.md §4): only Elo and skill move.
+ */
 function ensureLadder() {
-  if (state.ladder.target !== null) return;
-  const rungs = ladderRungs(state.calibration, state.engine.nodes);
-  Object.assign(state.ladder, ladderStart(rungs));
-  state.engine = { ...state.engine, ...nearestRung(rungs, state.ladder.target).strength };
+  if (state.ladder.mode === state.engine.mode || !LADDER_SETTINGS[state.engine.mode]) return;
+  Object.assign(state.ladder, settingLadderStart(state.engine.mode));
   store.set('ladder', state.ladder);
-  store.set('engine', state.engine);
 }
 
+const LADDER_EDGE = {
+  'elo:bottom': 'Jev lost to Elo 1320, the bottom of the Elo range. For weaker opponents, choose Skill level or a scripted baseline in the Stockfish settings.',
+  'elo:top': 'Jev beat Elo 3190, the top of the Elo range. For stronger opponents, choose Skill level or Full strength in the Stockfish settings.',
+  'skill:bottom': 'Jev lost to skill 0, the bottom of the skill range. For weaker opponents, lower the nodes per move or choose a scripted baseline in the Stockfish settings.',
+  'skill:top': 'Jev beat skill 20, the top of the skill range. For stronger opponents, raise the nodes per move in the Stockfish settings.',
+};
+
 /**
- * After a Jev vs Stockfish game: move the target by Jev's result and pick the nearest rung as the
- * next opponent. Only games that count toward performance Elo move the ladder (standard start,
- * no overrides, no cuts). In Auto the next game starts by itself.
+ * After a Jev vs Stockfish game: move Stockfish's Elo or skill level up after a Jev win and down
+ * after a loss, in the same mode. Only games that count toward performance Elo move the ladder
+ * (standard start, no overrides, no cuts). In Auto the next game starts by itself.
  */
 function advanceLadder(g, status) {
   if (!state.ladder.on || !isLadderGame(g.players)) return;
   const eligible = g.start === 'standard' && g.overrides === 0 && g.cuts === 0;
   if (!eligible) {
     toast("This game doesn't move the ladder (custom start, override or cut).");
+  } else if (!LADDER_SETTINGS[state.engine.mode]) {
+    toast(`The ladder only moves Elo or skill level, so Stockfish stays at ${strengthLabel(state.engine)}.`);
   } else {
     ensureLadder();
     const jc = g.players.w === 'jev' ? 'w' : 'b';
     const score = status.result === '1/2-1/2' ? 0.5 : (status.result === '1-0') === (jc === 'w') ? 1 : 0;
-    const next = ladderAfter(state.ladder, score, ladderRungs(state.calibration, state.engine.nodes));
-    Object.assign(state.ladder, { target: next.target, step: next.step, lastDir: next.lastDir });
-    state.engine = { ...state.engine, ...next.rung.strength };
+    const next = settingLadderAfter(state.ladder, state.engine, score);
+    Object.assign(state.ladder, { step: next.step, lastDir: next.lastDir });
+    state.engine = next.strength;
     store.set('engine', state.engine);
     store.set('ladder', state.ladder);
-    log({ type: 'ladder', game_id: g.id, jev_score: score, next_target: next.target, next_step: next.step, next_opponent: next.rung.strength, next_rating: next.rung.rating, rating_source: next.rung.source });
+    const r = ratingOf(state.engine, state.calibration);
+    log({ type: 'ladder', game_id: g.id, jev_score: score, ladder_mode: state.ladder.mode, next_step: next.step, next_opponent: state.engine,
+      next_rating: r?.rating ?? null, rating_source: r?.source ?? null, ...(next.edge && { edge: next.edge }) });
+    if (next.edge) toast(LADDER_EDGE[`${state.ladder.mode}:${next.edge}`]);
   }
   state.ladderGameOver = g.id;
   render();
@@ -665,8 +687,10 @@ function renderTurnCard() {
   line.hidden = !ladderGame;
   if (ladderGame) {
     const r = ratingOf(state.engine, state.calibration);
-    const rated = r ? ` (rated ${r.bound === 'upper' ? '≤ ' : r.bound === 'lower' ? '≥ ' : ''}${r.rating}, ${r.source})` : '';
-    line.textContent = `Ladder: this game's opponent is ${strengthLabel(state.engine)}${rated}.`
+    const rated = r ? ` (rated ${r.bound === 'upper' ? '≤ ' : r.bound === 'lower' ? '≥ ' : ''}${r.rating}, ${r.source})`
+      : " (unrated, so this game doesn't count toward performance Elo)";
+    const moves = LADDER_SETTINGS[state.engine.mode] ? '' : ' The ladder only moves Elo or skill level, so this opponent stays.';
+    line.textContent = `Ladder: this game's opponent is ${strengthLabel(state.engine)}${rated}.${moves}`
       + (status.over && state.flow === 'auto' ? ' The next game starts in a moment.' : '');
   }
   renderGradeChip(g.decisionAt(i));
@@ -850,6 +874,13 @@ function renderDecision() {
     const sf = gr ? ` · Stockfish: ${EVAL_LEVELS[gr.sfBucket]} (${formatEval({ cp: gr.best })})` : '';
     items.push(stat('own eval', `${EVAL_LEVELS[Math.round(pe.score)]} (${pe.score.toFixed(2)})${sf}`));
   }
+  if (r.lessonHits) {
+    const lessons = Object.keys(r.lessonHits.lessons).length;
+    const memory = Object.keys(r.lessonHits.memory);
+    const source = r.lessonRev === undefined ? ` (book ${r.setup.book})`
+      : ` (live, learned from ${r.lessonRev} graded decisions${r.lessonHeldOut ? '; a suite position, never learned from' : ''})`;
+    items.push(stat('lessons', `${lessons} ${lessons === 1 ? 'move' : 'moves'} warned${r.setup.lessons >= 2 ? `; remembered here: ${memory.join(', ') || 'none'}` : ''}${source}`));
+  }
   items.push(stat('latency', `${r.latencyMs} ms`), stat('tokens', `${r.usage.input_tokens} in / ${r.usage.output_tokens} out`), stat('model', r.model));
   if (gr) items.push(stat('graded', `depth ${gr.depth}, ${gr.ms} ms`));
   if (em) items.push(stat('Stockfish played', em.san));
@@ -874,13 +905,6 @@ function renderDecision() {
       }
       items.push(btn);
     }
-  if (r.lessonHits) {
-    const lessons = Object.keys(r.lessonHits.lessons).length;
-    const memory = Object.keys(r.lessonHits.memory);
-    const source = r.lessonRev === undefined ? ` (book ${r.setup.book})`
-      : ` (live, learned from ${r.lessonRev} graded decisions${r.lessonHeldOut ? '; a suite position, never learned from' : ''})`;
-    items.push(stat('lessons', `${lessons} ${lessons === 1 ? 'move' : 'moves'} warned${r.setup.lessons >= 2 ? `; remembered here: ${memory.join(', ') || 'none'}` : ''}${source}`));
-  }
   } else if (d.gradeJob?.error) {
     items.push(stat('grading failed', d.gradeJob.error, 'lbl-blunder'));
   }
@@ -1102,11 +1126,23 @@ function renderTop() {
     for (const b of seg.querySelectorAll('button')) {
       b.setAttribute('aria-pressed', String(b.dataset.value === value));
       if (key === 'foresight') b.disabled = state.setup.info === 'raw';
+      if (key === 'lessons') b.disabled = state.setup.info === 'raw';
     }
   }
   $('foresight-field').title = state.setup.info === 'raw'
     ? 'Foresight facts are assisted facts: raw gets none.'
     : 'How far ahead the move descriptions look: facts about the opponent\'s reply. Each level adds one fact.';
+  const book = $('book');
+  const option = (value, text, title) => Object.assign(document.createElement('option'), { value, textContent: text, title });
+  const live = state.live;
+  book.replaceChildren(
+    option('live', 'live', live ? `Learns from every graded decision as it is logged. Now: ${live.rev} decisions, ${live.promoted.join(', ') || 'no patterns yet'}, memory of ${live.memory_moves} moves.` : 'Learns from every graded decision as it is logged.'),
+    ...state.books.map(b => option(String(b.version), `book ${b.version}`, `Frozen: ${b.promoted.join(', ') || 'no patterns'}; memory of ${b.memory_moves} moves in ${b.memory_positions} positions`)),
+  );
+  book.value = String(state.setup.book ?? 'live');
+  book.disabled = state.setup.info === 'raw' || !state.setup.lessons;
+  $('lessons-field').title = state.setup.info === 'raw' ? 'Lessons are assisted facts: raw gets none.'
+    : 'What Jev\'s graded failures taught. 1: warnings on moves that match patterns that were often mistakes. 2: also moves that were mistakes in this exact position before. "live" learns from each grade as it arrives; a numbered book is frozen.';
   $('shuffle').checked = state.setup.shuffle;
   $('include-fen').checked = state.setup.includeFen;
   $('player-w').value = state.players.w;
@@ -1126,23 +1162,11 @@ function go(i) {
 }
 
 function askPromotion(color, done) {
-      if (key === 'lessons') b.disabled = state.setup.info === 'raw';
   const el = $('promo');
   el.replaceChildren(...['queen', 'rook', 'bishop', 'knight'].map(role => {
     const b = document.createElement('button');
     b.type = 'button';
     b.title = `Promote to a ${role}`;
-  const book = $('book');
-  const option = (value, text, title) => Object.assign(document.createElement('option'), { value, textContent: text, title });
-  const live = state.live;
-  book.replaceChildren(
-    option('live', 'live', live ? `Learns from every graded decision as it is logged. Now: ${live.rev} decisions, ${live.promoted.join(', ') || 'no patterns yet'}, memory of ${live.memory_moves} moves.` : 'Learns from every graded decision as it is logged.'),
-    ...state.books.map(b => option(String(b.version), `book ${b.version}`, `Frozen: ${b.promoted.join(', ') || 'no patterns'}; memory of ${b.memory_moves} moves in ${b.memory_positions} positions`)),
-  );
-  book.value = String(state.setup.book ?? 'live');
-  book.disabled = state.setup.info === 'raw' || !state.setup.lessons;
-  $('lessons-field').title = state.setup.info === 'raw' ? 'Lessons are assisted facts: raw gets none.'
-    : 'What Jev\'s graded failures taught. 1: warnings on moves that match patterns that were often mistakes. 2: also moves that were mistakes in this exact position before. "live" learns from each grade as it arrives; a numbered book is frozen.';
     b.append(pieceEl(color, role));
     b.onclick = e => { e.stopPropagation(); el.hidden = true; done(role); };
     return b;
@@ -1223,10 +1247,27 @@ function openEngineSettings() {
 }
 
 function renderLadderState() {
-  const rungs = ladderRungs(state.calibration, state.engine.nodes);
+  const mode = state.engine.mode;
+  const s = LADDER_SETTINGS[mode];
   const l = state.ladder;
-  $('ladder-state').textContent = `${rungs.length} rungs from ${rungs[0].rating} to ${rungs.at(-1).rating} (${rungs[0].source === 'calibrated' ? 'calibrated' : 'nominal UCI_Elo; run the calibration for the full range'}). `
-    + (l.target === null ? 'Starts in the middle with 400-point steps.' : `Next target ${l.target}, step ${l.step}.`);
+  const name = mode === 'elo' ? 'Elo' : 'skill level';
+  $('ladder-state').textContent = !s
+    ? 'The ladder moves Elo (1320–3190) or skill level (0–20) and never changes the mode. Choose one of those to use it.'
+    : `It moves ${name} within ${s.range[0]}–${s.range[1]} and never changes the mode. `
+      + (l.mode === mode ? `Next step ${l.step}.` : `It starts from the current setting with steps of ${s.step}, halving on each change of direction.`)
+      + (mode === 'skill' ? ` ${ratedSkillsNote()}` : '');
+}
+
+/** Skill levels only have a rating where the calibration has a rung for them. */
+function ratedSkillsNote() {
+  const rated = [];
+  for (let skill = SKILL_RANGE[0]; skill <= SKILL_RANGE[1]; skill++) {
+    if (ratingOf({ ...state.engine, skill }, state.calibration)) rated.push(skill);
+  }
+  const at = `at ${state.engine.nodes.toLocaleString('en-US')} nodes`;
+  return rated.length
+    ? `Only skill ${rated.join(', ')} ${at} ${rated.length === 1 ? 'has' : 'have'} a rating, so games against other levels don't count toward performance Elo.`
+    : `No skill level ${at} has a rating yet, so these games don't count toward performance Elo.`;
 }
 
 function saveEngineSettings() {
@@ -1250,8 +1291,14 @@ function saveEngineSettings() {
     e.hidden = false;
     return;
   }
+  const prev = state.engine;
   state.engine = { mode, elo, skill, nodes, depth: playDepth };
   store.set('engine', state.engine);
+  // A new mode, node budget or ladder setting (or turning the ladder on) restarts the ladder from it.
+  const key = LADDER_SETTINGS[mode]?.key;
+  if (mode !== prev.mode || nodes !== prev.nodes || (key && state.engine[key] !== prev[key]) || ($('ladder-on').checked && !state.ladder.on)) {
+    state.ladder.mode = null;
+  }
   state.ladder.on = $('ladder-on').checked;
   state.ladder.alternate = $('ladder-alternate').checked;
   store.set('ladder', state.ladder);
@@ -1283,7 +1330,14 @@ function wire() {
   }
   $('engine-settings').onclick = openEngineSettings;
   $('ladder-reset').onclick = () => {
-    state.ladder.target = null;
+    const mode = document.querySelector('input[name="eng-mode"]:checked')?.value;
+    if (!LADDER_SETTINGS[mode]) {
+      $('ladder-state').textContent = 'Choose Elo or Skill level first: the ladder only moves those.';
+      return;
+    }
+    state.engine = { ...state.engine, mode, [LADDER_SETTINGS[mode].key]: ladderMiddle(mode) };
+    store.set('engine', state.engine);
+    state.ladder.mode = null;
     ensureLadder();
     openEngineSettings();
   };
@@ -1315,6 +1369,11 @@ function wire() {
       };
     }
   }
+  $('book').onchange = e => {
+    state.setup.book = e.target.value === 'live' ? 'live' : Number(e.target.value);
+    store.set('setup', state.setup);
+    renderTop();
+  };
   $('shuffle').onchange = e => { state.setup.shuffle = e.target.checked; store.set('setup', state.setup); };
   $('include-fen').onchange = e => { state.setup.includeFen = e.target.checked; store.set('setup', state.setup); };
 
@@ -1369,11 +1428,6 @@ function wire() {
 }
 
 async function init() {
-  $('book').onchange = e => {
-    state.setup.book = e.target.value === 'live' ? 'live' : Number(e.target.value);
-    store.set('setup', state.setup);
-    renderTop();
-  };
   wire();
   window.addEventListener('resize', () => renderTimeline());
   api.getCalibration().then(c => { state.calibration = c; renderStats(); }).catch(() => {});
@@ -1385,6 +1439,12 @@ async function init() {
     badge.className = `badge ${state.status.mock ? 'mock' : 'live'}`;
     badge.textContent = state.status.mock ? 'MOCK' : 'LIVE';
     badge.title = state.status.mock ? `Fake Jev: ${state.status.reason}` : 'Answers come from the TypeSafe API';
+    ({ live: state.live, books: state.books } = await api.getLessons());
+    // A stored setup can name a frozen book that is gone: use the live lessons instead.
+    if (state.setup.lessons && state.setup.book !== 'live' && !state.books.some(b => b.version === state.setup.book)) {
+      state.setup.book = 'live';
+      store.set('setup', state.setup);
+    }
     renderTop();
   } catch (err) {
     state.error = `Couldn't reach the local server: ${err.message}`;
@@ -1393,9 +1453,3 @@ async function init() {
 }
 
 init();
-    ({ live: state.live, books: state.books } = await api.getLessons());
-    // A stored setup can name a frozen book that is gone: use the live lessons instead.
-    if (state.setup.lessons && state.setup.book !== 'live' && !state.books.some(b => b.version === state.setup.book)) {
-      state.setup.book = 'live';
-      store.set('setup', state.setup);
-    }

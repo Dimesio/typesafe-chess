@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ladderAfter, ladderRungs, ladderStart, nearestRung, ratingOf } from '../public/ratings.js';
+import { ladderAfter, ladderMiddle, ladderRungs, ladderStart, nearestRung, ratingOf, settingLadderAfter, settingLadderStart } from '../public/ratings.js';
 
 const calibration = {
   nodes: 150000,
@@ -42,4 +42,40 @@ test('ladder: starts in the middle, moves by result, snaps to the nearest rung',
   const afterWin = ladderAfter(afterLoss, 1, rungs);
   assert.equal(afterWin.step, 200, 'halved on the change of direction');
   assert.equal(afterWin.target, 1650);
+});
+
+test('app ladder: moves Elo or skill within the chosen mode, never switching modes', () => {
+  assert.equal(ladderMiddle('elo'), 2260);
+  assert.equal(ladderMiddle('skill'), 10);
+  assert.equal(settingLadderStart('full'), null, 'nothing to move');
+  let ladder = settingLadderStart('elo');
+  let strength = { mode: 'elo', elo: 1500, skill: 20, nodes: 150000, depth: 1 };
+  for (const [score, elo, step] of [[0, 1320, 400], [1, 1520, 200], [0.5, 1520, 200], [1, 1720, 200], [0, 1620, 100]]) {
+    const next = settingLadderAfter(ladder, strength, score);
+    ladder = { ...ladder, step: next.step, lastDir: next.lastDir };
+    strength = next.strength;
+    assert.deepEqual(strength, { mode: 'elo', elo, skill: 20, nodes: 150000, depth: 1 }, `after ${score}`);
+    assert.equal(next.step, step);
+  }
+  ladder = settingLadderStart('skill');
+  strength = { mode: 'skill', elo: 2250, skill: 10, nodes: 150000, depth: 1 };
+  for (const [score, skill] of [[1, 14], [0, 12], [1, 13], [0, 12], [0, 11]]) {
+    const next = settingLadderAfter(ladder, strength, score);
+    ladder = { ...ladder, step: next.step, lastDir: next.lastDir };
+    strength = next.strength;
+    assert.equal(strength.mode, 'skill');
+    assert.equal(strength.skill, skill);
+  }
+  assert.equal(ladder.step, 1, 'the skill step never drops below 1');
+});
+
+test('app ladder: reports running off either end of the range', () => {
+  const at = (mode, key, value) => ({ mode, [key]: value, nodes: 150000 });
+  assert.equal(settingLadderAfter(settingLadderStart('elo'), at('elo', 'elo', 1320), 0).edge, 'bottom');
+  assert.equal(settingLadderAfter(settingLadderStart('elo'), at('elo', 'elo', 1320), 0).strength.elo, 1320);
+  assert.equal(settingLadderAfter(settingLadderStart('elo'), at('elo', 'elo', 1400), 0).edge, null, 'reaching the end is not running off it');
+  assert.equal(settingLadderAfter(settingLadderStart('elo'), at('elo', 'elo', 3190), 1).edge, 'top');
+  assert.equal(settingLadderAfter(settingLadderStart('elo'), at('elo', 'elo', 3190), 0.5).edge, null);
+  assert.equal(settingLadderAfter(settingLadderStart('skill'), at('skill', 'skill', 0), 0).edge, 'bottom');
+  assert.equal(settingLadderAfter(settingLadderStart('skill'), at('skill', 'skill', 20), 1).edge, 'top');
 });

@@ -420,8 +420,23 @@ above. TypeSafe has no fine-tuning or feedback API, so the only lever is the inp
   - Settings with no rating from any of these are left unrated. Every game logs the rating
     and its source.
 - **Ladder** (Stockfish dialog, with an option to swap Jev's color each game):
-  - It uses the calibrated rungs, or UCI_Elo in steps of 100 before calibration. It starts
-    in the middle with 400-point steps and snaps to the nearest rung.
+  - **In the app** (changed 2026-09-19 at the user's request): it moves one setting of the
+    mode chosen in the dialog and **never changes the mode**. Elo moves UCI_Elo within
+    1320–3190 in steps of 400 (minimum 50). Skill level moves within 0–20 in steps of 4
+    (minimum 1). Other modes stay fixed. It starts from the current setting, and "Restart
+    the ladder in the middle" goes to Elo 2260 or skill 10. The step halves on each change
+    of direction (`settingLadderAfter` in `public/ratings.js`).
+    - Before this change it walked every calibrated rung sorted by rating, so it hopped
+      between modes: Elo → skill 0 at depth 1 → random → greedy.
+    - **Range ends:** when Jev loses to the bottom of a mode or beats its top, the app says
+      which mode or node budget reaches further. It doesn't switch by itself, so the whole
+      scale is still reachable.
+    - **Skill levels are unrated** except where the calibration has a rung (skill 0 at 150k
+      and 1k nodes). Games against the rest don't count toward performance Elo, and the
+      dialog and the game's ladder line say so.
+  - **In the bench** (`bench/games.js`): still the calibrated rungs across modes (UCI_Elo in
+    steps of 100 before calibration). It starts in the middle with 400-point steps and snaps
+    to the nearest rung.
   - Only games that count toward performance Elo move it. In Auto, the next game starts
     after 2 s.
 - **Performance Elo** (dashboard):
