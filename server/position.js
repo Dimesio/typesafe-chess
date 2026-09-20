@@ -67,6 +67,29 @@
 //                     attack your rook on b1 and rook on f1 at once", "the opponent's knight can go
 //                     to f3 with check and attack your rook on e1". Mating replies are left to level 2.
 //
+// DETAIL (setup.detail, assisted only; 0 = the facts above and nothing more, unchanged). The
+// facts above are listed only where they apply, so a quiet move often carries nothing but its
+// restatement: in Jev's own top 5 candidates, 42% carried no fact at all and 91% of positions
+// had two candidates with identical facts (FINDINGS.md §8). These levels say something about
+// every move instead, in one vocabulary, so the options can be compared. Still rules facts, one
+// ply, never Stockfish. A move that ends the game (checkmate or stalemate) carries none of them.
+//   1                 No new fact: the material facts are stated on every move.
+//                     exchange_on_square becomes "nothing is traded there" when the move neither
+//                     captures nor can be captured, and (with foresight ≥ 1)
+//                     after_their_best_capture becomes "you come out even" instead of being left
+//                     out. Presence goes from 39% and 56% of options to all of them.
+//   2 creates_threat  The opponent pieces that are hanging after the move (the same test as
+//                     leaves_hanging, from the other side: attacked by us, ignoring pins, and
+//                     undefended or attacked by something cheaper) and were not already hanging
+//                     before it: "Knight on c6", "Knight on c6 and Rook on a8", or "nothing".
+//                     The mirror of leaves_hanging: what this move threatens to win.
+//   3 pawn_cover      Which pawns cover the square the move lands on: "your pawn defends the
+//                     square", "the opponent can attack the square with a pawn" (a pawn already
+//                     attacking it, or one that can advance one or two squares to attack it),
+//                     both, or "no pawn defends the square, and none can attack it".
+// Detail facts come before the foresight facts, which stay last so server/lessons.js can strip
+// the foresight levels above a setup's own.
+//
 // Piece values for these facts: pawn 1, knight 3, bishop 3, rook 5, queen 9. The king is never
 // counted as hanging.
 import { Chess } from 'chess.js';
@@ -83,6 +106,9 @@ export const sideName = color => (color === 'w' ? 'white' : 'black');
 
 /** "Knight on f3" */
 const pieceOn = (type, square) => `${capitalize(PIECE_NAMES[type])} on ${square}`;
+
+/** ["a", "b", "c"] → "a, b and c" */
+const listInWords = xs => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 /** ['n', 'p', 'n'] → "a pawn and two knights" (cheapest first); with extra: "an extra pawn and two extra knights". */
 export function piecesInWords(types, { extra = false } = {}) {
@@ -321,8 +347,36 @@ function forkInWords(post, replies, me) {
   return null;
 }
 
-/** ASSISTED description for one legal move `m` of the side to move in `chess`, with foresight facts up to `foresight`. */
-function describeAssisted(chess, m, threats, foresight = 0) {
+/** True when a pawn of `color` standing on `from` would attack `to`. */
+function pawnAttacks(from, to, color) {
+  const dir = color === 'w' ? 1 : -1;
+  return Math.abs(from.charCodeAt(0) - to.charCodeAt(0)) === 1
+    && Number(to[1]) - Number(from[1]) === dir;
+}
+
+/**
+ * DETAIL 3: which pawns cover the square the move lands on, always stated. "Can attack" covers a
+ * pawn already attacking it and a pawn that can advance (one or two squares) to attack it.
+ */
+function pawnCoverInWords(post, m, me, replies) {
+  const them = other(me);
+  const defends = post.attackers(m.to, me).some(sq => post.get(sq).type === 'p');
+  const attacks = post.attackers(m.to, them).some(sq => post.get(sq).type === 'p')
+    || replies.some(r => r.piece === 'p' && !r.captured && pawnAttacks(r.to, m.to, them));
+  if (defends && attacks) return 'your pawn defends the square, and the opponent can attack it with a pawn';
+  if (defends) return 'your pawn defends the square';
+  if (attacks) return 'the opponent can attack the square with a pawn';
+  return 'no pawn defends the square, and none can attack it';
+}
+
+/**
+ * ASSISTED description for one legal move `m` of the side to move in `chess`.
+ * @param {Array<{ type, square }>} threats  your pieces hanging before the move (for answers_threat)
+ * @param {{ foresight?: number, detail?: number, theirHanging?: Array<{ square: string }> }} options
+ *   theirHanging: the opponent's pieces already hanging before the move, so detail 2 can report
+ *   only the threats this move creates.
+ */
+function describeAssisted(chess, m, threats, { foresight = 0, detail = 0, theirHanging = [] } = {}) {
   const me = chess.turn();
   const facts = { move: describeRaw(m) };
   if (m.captured) facts.captures = `a ${PIECE_NAMES[m.captured]}`;
@@ -352,6 +406,9 @@ function describeAssisted(chess, m, threats, foresight = 0) {
   const gained = (m.captured ? VALUE[m.captured] : 0) + (m.promotion ? VALUE[m.promotion] - 1 : 0);
   if (m.captured || attackers.length) {
     facts.exchange_on_square = exchangeInWords(gained - seeGain(post, m.to, replies));
+  } else if (detail >= 1) {
+    // Detail 1: the material dimension on every move, so the options can be compared on it.
+    facts.exchange_on_square = 'nothing is traded there';
   }
 
   // A check only delays the opponent's other captures by one move, so after a checking move the
@@ -374,11 +431,19 @@ function describeAssisted(chess, m, threats, foresight = 0) {
   }
   if (answers.length) facts.answers_threat = answers.join('; ');
 
+  if (detail >= 2 && !facts.stalemate) {
+    const already = new Set(theirHanging.map(p => p.square));
+    const fresh = hangingPieces(post, other(me), attackMap(post, me)).filter(p => !already.has(p.square));
+    facts.creates_threat = fresh.length ? listInWords(fresh.map(p => pieceOn(p.type, p.square))) : 'nothing';
+  }
+  if (detail >= 3 && !facts.stalemate) facts.pawn_cover = pawnCoverInWords(post, m, me, replies);
+
   if (foresight >= 1 && !facts.stalemate) {
     let theirBest = 0;
     for (const square of theirCaptures.keys()) theirBest = Math.max(theirBest, seeGain(post, square, replies));
     const net = gained - theirBest;
     if (net) facts.after_their_best_capture = `you come out ${net > 0 ? 'ahead' : 'behind'} by material worth ${materialInWords(Math.abs(net))}`;
+    else if (detail >= 1) facts.after_their_best_capture = 'you come out even';
   }
   if (foresight >= 2) {
     const mate = replies.find(r => r.san.endsWith('#')); // chess.js marks a mating move in its SAN
@@ -399,11 +464,12 @@ function describeAssisted(chess, m, threats, foresight = 0) {
  * @returns {{ moves: Array<{ san, uci, from, to, piece, captured?, promotion?, raw, assisted? }>,
  *             hanging?: { yours?: string[], opponent?: string[] }, material?: string }}
  */
-export function analyzePosition(chess, { assisted = true, foresight = 0 } = {}) {
+export function analyzePosition(chess, { assisted = true, foresight = 0, detail = 0 } = {}) {
   const me = chess.turn();
   const legal = chess.moves({ verbose: true });
   const out = {};
   let threats = null;
+  let threatBase = []; // detail 2's baseline: the opponent pieces already hanging before the move
   if (assisted) {
     const theirs = opponentCaptureMap(chess);
     threats = theirs ? hangingPieces(chess, me, theirs) : null;
@@ -414,6 +480,9 @@ export function analyzePosition(chess, { assisted = true, foresight = 0 } = {}) 
     if (theirHanging.length) hanging.opponent = theirHanging.map(p => pieceOn(p.type, p.square));
     if (Object.keys(hanging).length) out.hanging = hanging;
     out.material = materialFact(chess);
+    // Detail 2 reports only the threats a move creates, so the baseline uses the same
+    // attacks-ignoring-pins test as the check after the move.
+    if (detail >= 2) threatBase = hangingPieces(chess, other(me), attackMap(chess, me));
   }
   out.moves = legal.map(m => ({
     san: m.san,
@@ -424,7 +493,7 @@ export function analyzePosition(chess, { assisted = true, foresight = 0 } = {}) 
     ...(m.captured && { captured: m.captured }),
     ...(m.promotion && { promotion: m.promotion }),
     raw: describeRaw(m),
-    ...(assisted && { assisted: describeAssisted(chess, m, threats, foresight) }),
+    ...(assisted && { assisted: describeAssisted(chess, m, threats, { foresight, detail, theirHanging: threatBase }) }),
   }));
   return out;
 }

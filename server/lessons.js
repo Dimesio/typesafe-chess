@@ -90,7 +90,8 @@ const WORD_VALUE = new Map(Array.from({ length: 13 }, (_, i) => [materialInWords
 /** The foresight 1 count as a number of pawns: + ahead, − behind, 0 even or not listed. */
 function netAfterReply(facts) {
   const text = facts.after_their_best_capture;
-  if (!text) return 0;
+  // Detail 1 states an even result instead of leaving the fact out; both mean 0.
+  if (!text || text === 'you come out even') return 0;
   const m = /^you come out (ahead|behind) by material worth (.+)$/.exec(text);
   const value = m && WORD_VALUE.get(m[2]);
   if (!value) throw new Error(`unexpected after_their_best_capture: "${text}"`);

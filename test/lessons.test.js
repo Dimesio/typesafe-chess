@@ -52,9 +52,9 @@ test('lesson setup names: -LNbM after the foresight level, assisted only', () =>
   assert.equal(setupName({ info: 'raw', strategy: 'choice', lessons: 2, book: 1 }), 'raw-choice');
   assert.equal(lessonsOf({ info: 'assisted' }), 0, 'setups logged before lessons existed');
   for (const name of ['assisted-noul-f1-L2b3', 'assisted-choice-L1b12', 'assisted-choice-f3', 'assisted-noul-f1-L2live']) assert.equal(setupName(parseSetupName(name)), name);
-  assert.deepEqual(parseSetupName('assisted-noul-L1live'), { info: 'assisted', strategy: 'noul', foresight: 0, lessons: 1, book: 'live' });
+  assert.deepEqual(parseSetupName('assisted-noul-L1live'), { info: 'assisted', strategy: 'noul', foresight: 0, detail: 0, lessons: 1, book: 'live' });
   assert.throws(() => parseSetupName('raw-noul-L1live'), /assisted setups only/);
-  assert.deepEqual(parseSetupName('assisted-choice-f2-L1b3'), { info: 'assisted', strategy: 'choice', foresight: 2, lessons: 1, book: 3 });
+  assert.deepEqual(parseSetupName('assisted-choice-f2-L1b3'), { info: 'assisted', strategy: 'choice', foresight: 2, detail: 0, lessons: 1, book: 3 });
   assert.throws(() => parseSetupName('raw-choice-L1b1'), /assisted setups only/);
   assert.throws(() => parseSetupName('assisted-choice-L0b1'), /without -L0/);
   assert.throws(() => parseSetupName(`assisted-choice-L${MAX_LESSONS + 1}b1`), /from 0 to/);

@@ -14,7 +14,7 @@ import { CAP, EVAL_LEVELS as LEVELS, UNDECIDED_CP, capCp, formatEval, gradeDecis
 import { moveQualityElo } from './elo.js';
 import { decisionLine as buildDecisionLine, gradeLine } from './loglines.js';
 import * as api from './api.js';
-import { FORESIGHT, LESSONS, setupName } from './setups.js';
+import { DETAIL, FORESIGHT, LESSONS, setupName } from './setups.js';
 
 const $ = id => document.getElementById(id);
 const EVAL_LEVELS = LEVELS;
@@ -49,7 +49,7 @@ const legacyPlayers = { 'play-w': { w: 'human', b: 'jev' }, 'play-b': { w: 'jev'
 const state = {
   game: null,
   players: store.get('players', legacyPlayers ?? { w: 'human', b: 'human' }),
-  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, lessons: 0, book: null, ...store.get('setup', {}) },
+  setup: { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, detail: 0, lessons: 0, book: null, ...store.get('setup', {}) },
   books: [], // frozen lesson books (GET /api/lessons); the live lessons are always there
   live: null, // the live lessons' summary: { rev, promoted, memory_positions, memory_moves }
   policy: store.get('policy', 'argmax'),
@@ -1125,13 +1125,14 @@ function renderTop() {
     const value = String(key === 'policy' ? state.policy : state.setup[key]);
     for (const b of seg.querySelectorAll('button')) {
       b.setAttribute('aria-pressed', String(b.dataset.value === value));
-      if (key === 'foresight') b.disabled = state.setup.info === 'raw';
-      if (key === 'lessons') b.disabled = state.setup.info === 'raw';
+      if (key === 'foresight' || key === 'detail' || key === 'lessons') b.disabled = state.setup.info === 'raw';
     }
   }
   $('foresight-field').title = state.setup.info === 'raw'
     ? 'Foresight facts are assisted facts: raw gets none.'
     : 'How far ahead the move descriptions look: facts about the opponent\'s reply. Each level adds one fact.';
+  $('detail-field').title = state.setup.info === 'raw' ? 'Detail applies to the assisted facts: raw gets none.'
+    : 'How much every move says, so the options can be compared: 1 states the material outcome on all of them, 2 adds what the move threatens to win, 3 adds which pawns cover the square it moves to.';
   const book = $('book');
   const option = (value, text, title) => Object.assign(document.createElement('option'), { value, textContent: text, title });
   const live = state.live;
@@ -1354,13 +1355,14 @@ function wire() {
     return b;
   });
   $('foresight').replaceChildren(...levelButtons(FORESIGHT));
+  $('detail').replaceChildren(...levelButtons(DETAIL));
   $('lessons').replaceChildren(...levelButtons(LESSONS));
   for (const seg of document.querySelectorAll('#setup .seg')) {
     for (const b of seg.querySelectorAll('button')) {
       b.onclick = () => {
         if (seg.dataset.key === 'policy') { state.policy = b.dataset.value; store.set('policy', state.policy); }
         else {
-          const numeric = seg.dataset.key === 'foresight' || seg.dataset.key === 'lessons';
+          const numeric = ['foresight', 'detail', 'lessons'].includes(seg.dataset.key);
           state.setup[seg.dataset.key] = numeric ? Number(b.dataset.value) : b.dataset.value;
           if (seg.dataset.key === 'lessons') state.setup.book = state.setup.lessons ? (state.setup.book ?? 'live') : null;
           store.set('setup', state.setup);

@@ -46,8 +46,13 @@ from the legal moves, and Stockfish grades each pick. **The full design and mile
   asks Jev about one position and prints each setup's distribution (live when a key exists)
 - Setup names everywhere are `info-strategy` plus an optional foresight level for assisted:
   `assisted-choice-f2` (`public/setups.js`). Level 0 has no suffix, so M5 names still match.
-  Lessons add `-L<level>live` (learning live) or `-L<level>b<N>` (frozen book N):
-  `assisted-noul-f1-L2live`.
+  Detail adds `-d<level>` after the foresight level (`assisted-choice-f1-d2`), and lessons add
+  `-L<level>live` (learning live) or `-L<level>b<N>` (frozen book N): `assisted-noul-f1-L2live`.
+  The order in a name is fixed: `-fN`, then `-dN`, then `-LN…`.
+- `node scripts/context-audit.js` reports what Jev can see when it chooses: where the request's
+  characters go, how often each fact is present, how much loss the best of Jev's own top k would
+  have cost, and whether the facts can tell those candidates apart (FINDINGS.md §8). No API
+  calls and no Stockfish: it rebuilds the payloads and reads the logged grades.
 - Live lessons need no command: the server and the bench learn from `runs/*.jsonl` before each
   ask. The server reads all the logs at startup (about 2 s).
   - `npm run lessons` writes a report on them to `lessons/live.md`.
@@ -275,6 +280,22 @@ lost it (PLAN.md §4 "Why a pool and a hold").
   instead of `next_target`.
 - Tested in mock: Elo 1500 → 1320 → bottom notice, and skill 10 → 6 → 2 → 0 → bottom notice.
   104 unit tests pass.
+
+**Context audit and detail levels (2026-09-20, at the user's request, FINDINGS.md §8–9):**
+- **The audit** (`scripts/context-audit.js`, no API calls): the per-move descriptions are 84% of
+  an assisted request, and among Jev's own top 5 candidates 42% carried no fact at all while 91%
+  of positions had two candidates with identical facts. Playing the best of Jev's top 5 would
+  cut loss from 86 to 12 cp, so the discrimination fails, not the distribution. A rules-only
+  material re-rank of the top 5 got 89 → 81 cp (oracle 19), so material isn't what's missing.
+- **`setup.detail` 0–3** (assisted, opt-in, named `-dN` after `-fN`): level 1 states the material
+  facts on every move, 2 adds `creates_threat`, 3 adds `pawn_cover`. `server/position.js`
+  documents them; level 0 is byte-identical (13,064 comparisons over 1,633 logged positions).
+- **The live A/B found no effect** (2,260 decisions, about $0.30): 84 → 89 / 78 / 80 cp, all
+  within ±10. Presence reached 100% of options but 72% of top-5 sets still have two candidates
+  with identical facts, because the new facts read "nothing" for a quiet move.
+- **Rule of thumb from this:** judge a proposed fact by how often it separates two moves in
+  Jev's top 5 (`node scripts/context-audit.js --detail N`) before paying for a run.
+- 111 unit tests pass.
 
 **Open follow-ups** (FINDINGS.md "Next steps"):
 - ladder rungs between greedy capture (≤ 1026) and skill 0 at depth 1 (1517)

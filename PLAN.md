@@ -207,6 +207,44 @@ opponent's single reply and never at Stockfish.
   (noul) and blunders by about a third. Levels 2 and 3 were heeded but added nothing
   measurable. Games are next.
 
+### Detail levels (`setup.detail`, assisted only; added 2026-09-20)
+Another opt-in dimension, from the context audit in FINDINGS.md §8. Level 0 is the assisted
+setup above, unchanged. The facts above are listed **only where they apply**, and the audit
+found what that costs: among Jev's own top 5 candidates, 42% carried nothing but the restatement
+of the move, and 91% of positions had two or more candidates with identical facts, while the cp
+spread inside that top 5 averaged 280. TypeSafe's Choice guidance says the opposite — keep the
+fields consistent across options so the model can compare them directly. These levels say
+something about **every** move, in one vocabulary. Still rules facts from chess.js, one ply,
+never Stockfish. A move that ends the game carries none of them.
+1. No new fact: the material facts are stated on every move. `exchange_on_square` becomes
+   "nothing is traded there" and (at foresight ≥ 1) `after_their_best_capture` becomes "you come
+   out even" instead of being left out. Presence goes from 39% and 56% of options to all of them.
+   This isolates comparability from new information: level 1 tells Jev nothing it couldn't infer.
+2. `creates_threat`: the opponent pieces that this move leaves hanging and that weren't hanging
+   before it — the mirror of `leaves_hanging`. "Knight on c6", or "nothing".
+3. `pawn_cover`: which pawns cover the square the move lands on, including a pawn that can
+   advance to attack it. The classic reason a quiet move is good or bad.
+- **Against the earlier finding:** the foresight pass concluded that "threatens" facts never
+  explained a blunder. That was about explaining failures, and level 2 is aimed at a different
+  job: telling two quiet candidates apart. It may well not help; that's what the run measures.
+- **Setup names** carry the level after the foresight level: `assisted-choice-f1-d2`
+  (`public/setups.js`). Level 0 keeps the old names, so earlier stats still pool correctly.
+- **Cost:** the request grows. At foresight 1 on a 32-move position, level 3 is about 47% more
+  characters than level 0 (15.9k against 10.8k), still well under a cent per decision.
+- **Rules-only re-ranking is not the answer:** re-ranking Jev's top 5 by the existing material
+  facts moved sampled decisions from 89 to 81 cp against an oracle of 19 (FINDINGS.md §8), so
+  the missing information is not material. That's why levels 2 and 3 are not material facts.
+- **Result on the suite (FINDINGS.md §9): no effect.** 2,260 live decisions. Undecided cp loss
+  84 (control), 89, 78 and 80, all inside one standard error of the difference (±10), with the
+  request 17–50% larger. The picks did get steadier across option orders (the same pick in all
+  five went from 61% to 66%), but no better. The audit says why: presence went to 100% of
+  options, yet 72% of top-5 sets still have two candidates with **identical** facts, because
+  for a quiet move the new facts read "nothing". Uniform presence without discriminating
+  content changes nothing, so judge a new fact by the tie test
+  (`node scripts/context-audit.js --detail N`) before running it. Level 0 stays byte-identical,
+  and the levels remain for the two-stage experiment, where a few candidates can carry them
+  cheaply.
+
 ### Lessons: the feedback loop (`setup.lessons`, assisted only; added 2026-09-19)
 Jev's graded failures become **lessons**, and a setup can show Jev what they say. This is the
 one place where Stockfish's grades reach Jev's input. The user chose it on 2026-09-19, with

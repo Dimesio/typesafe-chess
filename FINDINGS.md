@@ -209,6 +209,123 @@ grading caveat in CLAUDE.md). Its unfinished game's decisions are in the log wit
   rated rung, and both performance Elo and the suite's move-quality estimate now say so. That's
   up from "between greedy capture and the bottom rung".
 
+### 8. What Jev can see when it chooses (context audit, 2026-09-20)
+No new API calls: this section re-reads the logged decisions and rebuilds the request payloads.
+Re-run it with `node scripts/context-audit.js`.
+
+**Where the characters go** (suite positions, ~31 legal moves each):
+
+| setup | chars | state | of which `pieces` | move descriptions |
+|---|---|---|---|---|
+| raw-choice | 1,883 | 21% | 18% | 57% |
+| assisted-choice | 4,286 | 11% | 8% | 79% |
+| assisted-choice-f1 | 5,620 | 9% | 6% | **84%** |
+
+The state is already small. Controlling Jev's context means controlling the per-move
+descriptions, which are five sixths of an assisted request.
+
+**How often a fact is present on an option** (assisted-choice-f1): `move` 100%,
+`after_their_best_capture` 56%, `exchange_on_square` 39%, `lands_on` 38%, `leaves_hanging`
+32%, `answers_threat` 7%, `captures` 6%, `check` 2%.
+
+**The facts can't separate the moves Jev is actually choosing between.** Taking Jev's own top 5
+moves in each of 605 sampled graded decisions (undecided, facts recomputed at foresight 1):
+- **42%** of those candidates carry no fact beyond the restatement of the move.
+- **91%** of positions have two or more candidates with **identical** fact profiles.
+- The best candidate carried no facts 40% of the time; Jev's pick, 39%.
+- The average cp spread inside that top 5 is **280**.
+
+So the assisted facts work as a material warning system, not as a description of the choice.
+That matches section 7 and `lessons/live.md`: moves that land hanging are 84% failures and Jev
+mostly avoids them (18% of picks carrying that fact failed), while quiet moves — where most
+decisions are settled — all look the same.
+
+**How much is in Jev's own distribution already** (logged graded decisions, undecided):
+
+| setup | n | Jev's pick | best move in top-3 / 5 / 8 | best of top-3 / 5 / 8 would lose |
+|---|---|---|---|---|
+| assisted-choice | 1,519 | 97 cp | 53% / 64% / 76% | 32 / 18 / 10 cp |
+| assisted-choice-f1 | 525 | 86 cp | 51% / 64% / 77% | 25 / 12 / 7 cp |
+| assisted-choice-f3 | 1,198 | 78 cp | 53% / 66% / 77% | 27 / 15 / 10 cp |
+| assisted-noul | 1,868 | 97 cp | 53% / 63% / 75% | 40 / 22 / 13 cp |
+| assisted-noul-f1 | 931 | 80 cp | 57% / 69% / 80% | 32 / 18 / 10 cp |
+| assisted-noul-f3 | 625 | 73 cp | 56% / 69% / 82% | 21 / 12 / 7 cp |
+
+Playing the best of Jev's own top 5 would cut loss 4–7×. The knowledge is in the distribution;
+the discrimination is what fails.
+
+**It isn't only material.** Re-ranking each top 5 by the existing material facts (a rules-only
+ranking, no Stockfish) moved 1,062 sampled decisions from 89 to 81 cp, against an oracle of 19.
+Material comparability is worth about 8 cp. The missing dimension is what a move *does* —
+threats it creates, activity, king safety — which the facts never mention.
+
+**Measured against TypeSafe's guidance** (docs.typesafe.ai, read 2026-09-20):
+- "Include only information relevant to current questions" — met; the state is lean.
+- "consistent field names across Choice options … lets the model compare options directly" —
+  not met: heterogeneous keys, 91% ties inside the top 5.
+- "Broad questions hide several judgments behind one answer" — one "strongest move" Choice
+  over ~31 options carries safety, activity and opportunity at once.
+- "Questions are evaluated in parallel, so adding questions barely changes the response time" —
+  only two questions are asked. M0 fitted 2,048 Nouls in one request, so the budget is nearly
+  unused.
+- Score levels "must describe concrete situations and stand on their own" — `position_eval`
+  uses bare labels ("clearly worse").
+
+**Caveats for this section.** Measurements 2 and 3 pool decisions across setups and runs
+instead of being a controlled comparison, and facts are recomputed at foresight 1 even for
+decisions that ran at level 0, so the real descriptions were at least as bare as reported. The
+oracle is an upper bound on re-ranking, not a result any design has achieved.
+
+### 9. Detail levels: saying something about every move didn't help (2026-09-20)
+The experiment §8 pointed to: state the facts on **every** option, in one vocabulary, so the
+options can be compared (`setup.detail`, PLAN.md §3). Live suite run,
+`runs/bench-suite-2026-09-20T15-29-00-181Z.jsonl`: 113 positions × 4 setups × 5 option orders =
+2,260 decisions, about $0.30 by M5's cost per token. Report:
+`runs/summary-2026-09-20T15-36-17-710Z.md`.
+
+| setup | n | undecided cp loss | vs control | blunders | top-1 | tokens in |
+|---|---|---|---|---|---|---|
+| assisted-choice-f1 (control) | 565 | 84 ± 7 | — | 7.4% | 27% | 2,674 |
+| assisted-choice-f1-d1 | 565 | 89 ± 7 | +5 ± 10 | 9.0% | 28% | 3,120 |
+| assisted-choice-f1-d2 | 565 | 78 ± 7 | −6 ± 10 | 6.9% | 29% | 3,440 |
+| assisted-choice-f1-d3 | 565 | 80 ± 7 | −4 ± 10 | 8.0% | 29% | 4,014 |
+
+**No level moved move quality.** Every difference is inside one standard error of the
+difference, while the request grew 17–50%. The same holds in the report's fixed-order table
+(84, 92, 84, 85) and on the curated positions, where all four setups picked the same move
+everywhere except the stalemate trap, which all four survived.
+
+**Why, mechanically.** Re-running the §8 audit at each level shows the intended change happened
+and still wasn't enough:
+
+| | candidates with no facts | top-5 sets with two identical fact profiles |
+|---|---|---|
+| detail 0 | 42% | 91% |
+| detail 1 | 0% | 92% |
+| detail 2 | 0% | 86% |
+| detail 3 | 0% | **72%** |
+
+Every option now says something, but for quiet candidates what it says is "nothing is traded
+there", "nothing" and "no pawn defends the square, and none can attack it" — identical across
+the moves being compared. **Uniform presence without discriminating content changes nothing.**
+That is the lesson: §8's 42%-bare number named a symptom, and the 91% tie number was the real
+constraint.
+
+**What did shift** (order sensitivity, 113 positions × 5 orders): the same pick in every order
+went from 61% (control) to 63% (d2) and 66% (d3), pairwise agreement from 76% to 81%, and the
+cp-loss spread across orders from 52 to 43. More facts made the pick steadier without making it
+better, and those differences are themselves about one standard error.
+
+**Level 1 is the cleanest negative.** It adds no information at all — only the same material
+facts, stated where they used to be left out — and it cost 446 tokens and, if anything, a little
+accuracy (+5 cp, 9.0% blunders against 7.4%). Restating what Jev could already infer does not
+help it compare.
+
+**Kept, not reverted.** Detail 0 is byte-identical to the code before this experiment (13,064
+comparisons across 1,633 logged positions, 0 differences), so the levels cost nothing when off,
+and `-d2`/`-d3` are available for the two-stage experiment, where a handful of candidates can
+carry facts this cheap.
+
 ## Caveats
 - **Small samples.** There were 20 games per setup, and only 7–14 of each counted toward
   performance Elo. The ± ranges are 95% intervals and are wide. The suite has 105 undecided
@@ -235,7 +352,26 @@ grading caveat in CLAUDE.md). Its unfinished game's decisions are in the log wit
    a unit test per CLAUDE.md), measured with this same suite.
 4. **Use the confidence ≥ 0.8 signal** (assisted-choice) in analysis. It predicts good
    moves, so log it for decisions; don't gate on it.
-5. **More games at foresight levels 0–2.** The first 58 (section 7) point the same way as the
+5. **Context structure, from section 8's audit.** The first one has run (section 9: no effect),
+   so the order now is:
+   1. ~~Positive facts on every option~~ — done, `setup.detail` 1–3, no measurable effect
+      (section 9). Its lesson: presence was never the constraint; **candidates that differ in
+      the facts** are. Any new fact should be judged by how often it separates two moves in
+      Jev's top 5, which `node scripts/context-audit.js --detail N` now reports before a run.
+   2. **Two-stage decision:** re-ask Jev's own top 5–8 with a much larger budget per candidate
+      and different questions. The oracle says 12–19 cp lives there; recall caps the gain. Now
+      the best-supported direction, and detail 2–3 are cheap on five candidates.
+   3. **De-bias Choice inside one request:** the same Choice twice with reversed option order,
+      averaged. Order changes the pick 43% of the time (section 4; 39% in section 9's
+      control, where detail 3 brought it to 34%).
+   4. **Decompose into dimensions** (per-move Nouls on 3–4 orthogonal questions, combined in
+      code), which also yields per-dimension data to reweight without re-asking.
+   5. Facts with more resolution than "nothing": what the move does positionally — mobility,
+      the squares or files it takes control of, king distance — measured by the tie test first.
+   6. Concrete `position_eval` level descriptions, and an `includeFen` / `pieces` A/B.
+   7. The same detail A/B on `noul`, whose questions are independent, so comparability across
+      options matters less in theory. Untested.
+6. **More games at foresight levels 0–2.** The first 58 (section 7) point the same way as the
    suite but can't separate the levels: 16–18 rated games each give ±200 Elo intervals, and
    run-to-run noise was as large as the effect. About 60 games per setup would halve the
    intervals. Slow lost-position grades stall bench games, so settle the grading follow-up

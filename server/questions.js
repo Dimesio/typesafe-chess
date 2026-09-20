@@ -4,10 +4,10 @@ import { Chess } from 'chess.js';
 import { choice, noul, score } from '@typesafe-ai/sdk';
 import { analyzePosition, pieceList, recentMoves, sideName } from './position.js';
 import { applyLessons, neededForesight } from './lessons.js';
-import { INFO, MAX_FORESIGHT, MAX_LESSONS, STRATEGIES, setupName } from '../public/setups.js';
+import { INFO, MAX_DETAIL, MAX_FORESIGHT, MAX_LESSONS, STRATEGIES, setupName } from '../public/setups.js';
 
 export { INFO, STRATEGIES, setupName };
-export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, lessons: 0, book: null };
+export const DEFAULT_SETUP = { info: 'assisted', strategy: 'choice', shuffle: true, includeFen: false, foresight: 0, detail: 0, lessons: 0, book: null };
 
 export const POSITION_EVAL_LEVELS = [
   'losing decisively', 'clearly worse', 'roughly equal', 'clearly better', 'winning decisively',
@@ -23,6 +23,11 @@ export function normalizeSetup(setup = {}) {
   s.foresight = s.info === 'assisted' ? Number(s.foresight ?? 0) : 0;
   if (!Number.isInteger(s.foresight) || s.foresight < 0 || s.foresight > MAX_FORESIGHT) {
     throw new Error(`setup.foresight must be a whole number from 0 to ${MAX_FORESIGHT}`);
+  }
+  // Detail is an assisted setting too, and says how many facts every move carries.
+  s.detail = s.info === 'assisted' ? Number(s.detail ?? 0) : 0;
+  if (!Number.isInteger(s.detail) || s.detail < 0 || s.detail > MAX_DETAIL) {
+    throw new Error(`setup.detail must be a whole number from 0 to ${MAX_DETAIL}`);
   }
   // Lessons are assisted facts too. With lessons off there is no book (recorded as null).
   s.lessons = s.info === 'assisted' ? Number(s.lessons ?? 0) : 0;
@@ -71,12 +76,12 @@ export function buildRequest({ fen, history = [], setup, rng = Math.random, orde
   if (s.lessons) {
     if (book?.version !== s.book) throw new Error(`This setup needs lesson book ${s.book}.`);
     // Patterns may need more foresight than the setup shows; applyLessons strips the extra facts.
-    analysis = analyzePosition(chess, { assisted, foresight: Math.max(s.foresight, neededForesight(book)) });
+    analysis = analyzePosition(chess, { assisted, foresight: Math.max(s.foresight, neededForesight(book)), detail: s.detail });
     const applied = applyLessons({ fen, moves: analysis.moves, book, level: s.lessons, foresight: s.foresight });
     analysis = { ...analysis, moves: applied.moves };
     lessonHits = applied.hits;
   } else {
-    analysis = analyzePosition(chess, { assisted, foresight: s.foresight });
+    analysis = analyzePosition(chess, { assisted, foresight: s.foresight, detail: s.detail });
   }
 
   const state = {

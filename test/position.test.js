@@ -262,3 +262,78 @@ test('foresight levels are cumulative and add their facts after the level 0 ones
 test('a mating move lists no foresight facts: the game ends', () => {
   assert.deepEqual(withForesight('6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', 'Ra8#', 3), { move: 'Rook from a1 moves to a8, giving checkmate', checkmate: 'checkmate: you win the game' });
 });
+
+// ---------- detail levels (FINDINGS.md §8) ----------
+
+const withDetail = (fen, san, detail, foresight = 0) => {
+  const m = analyzePosition(new Chess(fen), { foresight, detail }).moves.find(x => x.san === san);
+  assert.ok(m, `${san} should be legal in ${fen}`);
+  return m.assisted;
+};
+
+test('detail 0 changes nothing at any foresight level', () => {
+  for (const fen of ['r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4',
+    '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1', '6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1']) {
+    for (const foresight of [0, 1, 2, 3]) {
+      const plain = analyzePosition(new Chess(fen), { foresight });
+      const detail0 = analyzePosition(new Chess(fen), { foresight, detail: 0 });
+      assert.deepEqual(detail0, plain, `${fen} at foresight ${foresight}`);
+    }
+  }
+});
+
+test('detail 1: the material facts are stated on every move, even when nothing happens', () => {
+  const fen = 'r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
+  // A quiet move says nothing about material at level 0, and both facts at level 1.
+  assert.equal(withDetail(fen, 'c3', 0, 1).exchange_on_square, undefined);
+  assert.equal(withDetail(fen, 'c3', 1, 1).exchange_on_square, 'nothing is traded there');
+  assert.equal(withDetail(fen, 'Bxc6', 0, 1).after_their_best_capture, undefined, 'an even result is left out at level 0');
+  assert.equal(withDetail(fen, 'Bxc6', 1, 1).after_their_best_capture, 'you come out even');
+  // A real trade keeps its own wording.
+  assert.equal(withDetail(fen, 'Bxc6', 1, 1).exchange_on_square, 'even trade');
+  assert.equal(withDetail(fen, 'Ng5', 1, 1).exchange_on_square, 'loses material worth a minor piece');
+  // Without foresight there is no reply fact to state.
+  assert.equal(withDetail(fen, 'c3', 1, 0).after_their_best_capture, undefined);
+  const all = analyzePosition(new Chess(fen), { foresight: 1, detail: 1 }).moves;
+  assert.ok(all.every(m => m.assisted.exchange_on_square && m.assisted.after_their_best_capture),
+    'every move carries both material facts');
+});
+
+test('detail 2: creates_threat is the mirror of leaves_hanging, and only for new threats', () => {
+  // Bxc6 removes the knight that defended e5, so the pawn there becomes winnable.
+  const fen = 'r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
+  assert.equal(withDetail(fen, 'Bxc6', 2).creates_threat, 'Pawn on e5');
+  assert.equal(withDetail(fen, 'c3', 2).creates_threat, 'nothing');
+  // A piece that was already hanging before the move is not a threat this move creates.
+  const already = 'rnbqkbnr/pppp1ppp/8/4p3/7P/5N2/PPPPPPP1/RNBQKB1R w KQkq - 0 3';
+  assert.equal(analyzePosition(new Chess(already)).hanging?.opponent?.includes('Pawn on e5'), true);
+  assert.equal(withDetail(already, 'a3', 2).creates_threat, 'nothing');
+  // Two at once are listed together; a knight that reaches only one reports only that one.
+  const fork = '3r3r/8/8/6N1/8/8/8/K5k1 w - - 0 1';
+  assert.equal(withDetail(fork, 'Nf7', 2).creates_threat, 'Rook on d8 and Rook on h8');
+  assert.equal(withDetail(fork, 'Ne6', 2).creates_threat, 'Rook on d8');
+  assert.equal(withDetail(fork, 'Ne4', 2).creates_threat, 'nothing');
+});
+
+test('detail 3: pawn_cover says which pawns cover the square, on every move', () => {
+  const fen = 'r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
+  assert.equal(withDetail(fen, 'c3', 3).pawn_cover, 'your pawn defends the square');
+  assert.equal(withDetail(fen, 'O-O', 3).pawn_cover, 'no pawn defends the square, and none can attack it');
+  // b7 can advance two squares to b5 and attack a4.
+  assert.equal(withDetail(fen, 'Ba4', 3).pawn_cover, 'the opponent can attack the square with a pawn');
+  // d4 is attacked by the e5 pawn already, and defended by no pawn of ours.
+  assert.equal(withDetail(fen, 'd4', 3).pawn_cover, 'the opponent can attack the square with a pawn');
+  const all = analyzePosition(new Chess(fen), { detail: 3 }).moves;
+  assert.ok(all.every(m => m.assisted.pawn_cover), 'every move carries it');
+});
+
+test('detail facts come before the foresight facts, and a game-ending move carries none', () => {
+  const fen = 'r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
+  const keys = Object.keys(withDetail(fen, 'c3', 3, 1));
+  assert.deepEqual(keys, ['move', 'exchange_on_square', 'leaves_hanging', 'creates_threat', 'pawn_cover', 'after_their_best_capture']);
+  assert.deepEqual(withDetail('6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', 'Ra8#', 3, 3),
+    { move: 'Rook from a1 moves to a8, giving checkmate', checkmate: 'checkmate: you win the game' });
+  const stale = withDetail('k7/8/1Q6/8/8/8/8/7K w - - 0 1', 'Qc7', 3, 3);
+  assert.equal(stale.stalemate, 'stalemate: the game ends in a draw');
+  assert.ok(!('creates_threat' in stale) && !('pawn_cover' in stale), 'a stalemating move ends the game too');
+});

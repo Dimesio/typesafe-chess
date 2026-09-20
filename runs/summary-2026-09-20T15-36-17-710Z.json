@@ -1,0 +1,917 @@
+{
+  "sources": [
+    "runs/bench-suite-2026-09-20T15-29-00-181Z.jsonl"
+  ],
+  "report": {
+    "games": [],
+    "suite": [
+      {
+        "setup": "assisted-choice-f1",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 83.66215090759445,
+          "avgLoss": 78.19469026548673,
+          "lossSE": 14.750746506678201,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 84.06666666666666,
+            "lossSE": 15.731668596350383
+          },
+          "blunders": 4,
+          "mistakes": 3,
+          "inaccuracies": 14,
+          "top1": 0.3185840707964602,
+          "avgPBest": 0.24495575221238933,
+          "avgExpectedLoss": 118.06160632877443,
+          "confLossR": -0.08333486338143985,
+          "evalAgreement": 0.6017699115044248,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              12,
+              45,
+              5,
+              0
+            ],
+            [
+              0,
+              0,
+              5,
+              11,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              7,
+              5
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 246.4070796460177,
+        "inputTokens": 2673.991150442478,
+        "cost": 0.06345381000000001
+      },
+      {
+        "setup": "assisted-choice-f1-d1",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 82.48744338593869,
+          "avgLoss": 85.97345132743362,
+          "lossSE": 16.115513508060342,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 92.43809523809524,
+            "lossSE": 17.184715735506636
+          },
+          "blunders": 5,
+          "mistakes": 3,
+          "inaccuracies": 15,
+          "top1": 0.30973451327433627,
+          "avgPBest": 0.25141592920353983,
+          "avgExpectedLoss": 116.62203271654595,
+          "confLossR": -0.13653376710183757,
+          "evalAgreement": 0.5929203539823009,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              12,
+              44,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              5,
+              11,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              7,
+              5
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 227.5646017699115,
+        "inputTokens": 3120.283185840708,
+        "cost": 0.07404432000000001
+      },
+      {
+        "setup": "assisted-choice-f1-d2",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 83.54279533016208,
+          "avgLoss": 77.69911504424779,
+          "lossSE": 14.509271007095995,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 83.53333333333333,
+            "lossSE": 15.47115398464528
+          },
+          "blunders": 4,
+          "mistakes": 3,
+          "inaccuracies": 15,
+          "top1": 0.336283185840708,
+          "avgPBest": 0.25761061946902647,
+          "avgExpectedLoss": 116.59108876374358,
+          "confLossR": -0.08656321972629093,
+          "evalAgreement": 0.6017699115044248,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              12,
+              45,
+              5,
+              0
+            ],
+            [
+              0,
+              0,
+              5,
+              11,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              7,
+              5
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 241.35929203539823,
+        "inputTokens": 3440.495575221239,
+        "cost": 0.08164296000000001
+      },
+      {
+        "setup": "assisted-choice-f1-d3",
+        "positions": 113,
+        "summary": {
+          "n": 113,
+          "accuracy": 83.5769635843277,
+          "avgLoss": 79.16814159292035,
+          "lossSE": 15.00086861504657,
+          "undecided": {
+            "n": 105,
+            "avgLoss": 85.11428571428571,
+            "lossSE": 15.999715624108097
+          },
+          "blunders": 6,
+          "mistakes": 2,
+          "inaccuracies": 13,
+          "top1": 0.34513274336283184,
+          "avgPBest": 0.2511504424778761,
+          "avgExpectedLoss": 120.04872530615891,
+          "confLossR": -0.09041335709925333,
+          "evalAgreement": 0.6106194690265486,
+          "confusion": [
+            [
+              2,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              3,
+              1,
+              0
+            ],
+            [
+              2,
+              12,
+              45,
+              5,
+              0
+            ],
+            [
+              0,
+              0,
+              4,
+              12,
+              0
+            ],
+            [
+              0,
+              2,
+              4,
+              7,
+              5
+            ]
+          ]
+        },
+        "moveElo": {
+          "bound": "below",
+          "value": 1517
+        },
+        "latencyMs": 237.70442477876105,
+        "inputTokens": 4014.0619469026547,
+        "cost": 0.09525369000000002
+      }
+    ],
+    "order": [
+      {
+        "setup": "assisted-choice-f1",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.6106194690265486,
+        "pairAgree": 0.7610619469026548,
+        "pBestSpread": 0.08999999999999994,
+        "lossSpread": 52.46017699115044,
+        "quintiles": [
+          1.024347240915213,
+          0.8960315638450519,
+          0.9701476121562962,
+          0.9446284074605474,
+          1.1641010719754987
+        ]
+      },
+      {
+        "setup": "assisted-choice-f1-d1",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.5929203539823009,
+        "pairAgree": 0.7557522123893805,
+        "pBestSpread": 0.09389380530973442,
+        "lossSpread": 70.09734513274336,
+        "quintiles": [
+          1.0382072678331122,
+          0.904321377331424,
+          0.9614124457308264,
+          0.931210903873747,
+          1.162045941807046
+        ]
+      },
+      {
+        "setup": "assisted-choice-f1-d2",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.6283185840707964,
+        "pairAgree": 0.7991150442477876,
+        "pBestSpread": 0.09690265486725654,
+        "lossSpread": 44.575221238938056,
+        "quintiles": [
+          1.0005598923284038,
+          0.8997560975609794,
+          0.9631490593343004,
+          0.9571248206599728,
+          1.1809954058192988
+        ]
+      },
+      {
+        "setup": "assisted-choice-f1-d3",
+        "positions": 113,
+        "variants": 5,
+        "allSame": 0.6637168141592921,
+        "pairAgree": 0.8115044247787611,
+        "pBestSpread": 0.09486725663716812,
+        "lossSpread": 42.64601769911504,
+        "quintiles": [
+          0.975730820995967,
+          0.8966628407460572,
+          0.9605557163531131,
+          0.9686800573888102,
+          1.2023124042879052
+        ]
+      }
+    ],
+    "curated": [
+      {
+        "position": "start",
+        "category": "opening",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "e4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "e2e4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-back-rank",
+        "category": "mate in 1",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Rd8#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d1d8"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-back-rank-black",
+        "category": "mate in 1",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Ra1#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "a8a1"
+            ]
+          }
+        }
+      },
+      {
+        "position": "mate1-scholars",
+        "category": "mate in 1",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Qxf7#",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "h5f7"
+            ]
+          }
+        }
+      },
+      {
+        "position": "hanging-queen",
+        "category": "hanging piece",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Nxh4",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f3h4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "fork-knight",
+        "category": "fork",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Nxc7+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "d5c7"
+            ]
+          }
+        }
+      },
+      {
+        "position": "pin-italian",
+        "category": "pin",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "O-O",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c3d5"
+            ]
+          }
+        }
+      },
+      {
+        "position": "en-passant",
+        "category": "en passant",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Nf3",
+            "loss": 10,
+            "label": null,
+            "best": [
+              "d2d4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "promotion",
+        "category": "promotion",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "f8=Q",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "f7f8q"
+            ]
+          }
+        }
+      },
+      {
+        "position": "castling",
+        "category": "castling",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "O-O",
+            "loss": 160,
+            "label": "inaccuracy",
+            "best": [
+              "e3c5"
+            ]
+          }
+        }
+      },
+      {
+        "position": "stalemate-trap",
+        "category": "stalemate",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Qd8+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Qa6+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Qa6+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Qa6+",
+            "loss": 0,
+            "label": null,
+            "best": [
+              "b6b4",
+              "b6b3",
+              "b6b5",
+              "b6c6",
+              "b6a6",
+              "b6b1",
+              "b6b2",
+              "b6e6",
+              "b6d6",
+              "b6c5",
+              "b6d4",
+              "b6d8",
+              "b6a5",
+              "b6h6",
+              "b6g1",
+              "b6g6",
+              "b6f2",
+              "b6f6",
+              "b6e3"
+            ]
+          }
+        }
+      },
+      {
+        "position": "quiet-qgd",
+        "category": "quiet",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "O-O",
+            "loss": 9,
+            "label": null,
+            "best": [
+              "h2h4"
+            ]
+          }
+        }
+      },
+      {
+        "position": "lucena",
+        "category": "endgame",
+        "bySetup": {
+          "assisted-choice-f1": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "assisted-choice-f1-d1": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "assisted-choice-f1-d2": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          },
+          "assisted-choice-f1-d3": {
+            "pick": "Rc8+",
+            "loss": 18,
+            "label": null,
+            "best": [
+              "c1c4"
+            ]
+          }
+        }
+      }
+    ],
+    "check": null,
+    "session": {
+      "perfGames": 0,
+      "ineligible": 0
+    }
+  }
+}
